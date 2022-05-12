@@ -54,9 +54,9 @@ dependencies {
     implementation 'com.github.stephengold:SkyControl:0.9.32'
     implementation group: 'commons-io', name: 'commons-io', version: '2.0.1'
     implementation 'com.github.stephengold:MaVehicles:0.7.0'
-    //implementation "com.github.stephengold:Minie:4.9.0"
-    implementation "com.github.stephengold:Minie:4.9.0+bare"
-    implementation "com.github.stephengold:Minie:4.9.0+ano"
+    implementation "com.github.stephengold:Minie:4.9.0"
+    //implementation "com.github.stephengold:Minie:4.9.0+bare"
+    //implementation "com.github.stephengold:Minie:4.9.0+ano"
     implementation 'com.github.stephengold:Garrett:0.2.0'
     api 'com.simsilica:sim-math:1.5.0'
     api 'org.jmonkeyengine:jme3-terrain:3.5.2-stable'
