@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.view.View;
 import android.view.WindowManager;
@@ -20,6 +21,7 @@ import com.scenemaxeng.projector.SceneMaxApp;
 import com.scenemaxeng.projector.Util;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.List;
 
 public class FullscreenGameActivity extends Activity {
@@ -68,6 +70,8 @@ public class FullscreenGameActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        importProgram();
 
         setContentView(R.layout.activity_fullscreen_game);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -136,6 +140,19 @@ public class FullscreenGameActivity extends Activity {
             public void onUp() {
                 joystickState=0;
                 app.observeRelease();
+            }
+        });
+
+    }
+
+    private void importProgram() {
+        InputStream is = this.getResources().openRawResource(R.raw.code);
+        File code = new File(this.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),"code.zip");
+        com.scenemaxeng.Util.copyInputStreamToFile(is, code);
+        new ImportProgramZipFileTask(code.getAbsolutePath(), new Callback() {
+            @Override
+            public void done(Object res) {
+
             }
         });
 
