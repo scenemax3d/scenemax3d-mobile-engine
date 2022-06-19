@@ -20,6 +20,9 @@ import com.jmedeisis.bugstick.JoystickListener;
 import com.scenemaxeng.projector.SceneMaxApp;
 import com.scenemaxeng.projector.Util;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.InputStream;
 import java.util.List;
@@ -31,9 +34,12 @@ public class FullscreenGameActivity extends Activity {
     public final static int LEFT=4;
     public final static int RIGHT=8;
 
+    private String targetScriptPath;
     private int joystickState = 0;
 
     private JmeProjectorFragment jmeFragment;
+    private String resourcesHash;
+
     Joystick joystick;
     private SceneMaxApp app;
 
@@ -71,6 +77,7 @@ public class FullscreenGameActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        com.scenemaxeng.Util.setContext(this);
         importProgram();
 
         setContentView(R.layout.activity_fullscreen_game);
@@ -150,11 +157,23 @@ public class FullscreenGameActivity extends Activity {
         File code = new File(this.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),"code.zip");
         com.scenemaxeng.Util.copyInputStreamToFile(is, code);
         new ImportProgramZipFileTask(code.getAbsolutePath(), new Callback() {
+
             @Override
             public void done(Object res) {
+                if(res!=null){
+
+                    JSONObject obj = (JSONObject)res;
+                    try {
+                        FullscreenGameActivity.this.targetScriptPath = obj.getString("targetScriptPath");
+                        FullscreenGameActivity.this.resourcesHash = obj.getString("resourcesHash");
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
 
             }
-        });
+        }).run();
 
     }
 
@@ -165,15 +184,19 @@ public class FullscreenGameActivity extends Activity {
 //        new Handler().postDelayed(new Runnable() {
 //            @Override
 //            public void run() {
-                FullscreenGameActivity.this.finish();
+        FullscreenGameActivity.this.finish();
 //            }
 //        },500);
     }
 
     private void startGame() {
+        if(this.targetScriptPath==null) {
+            return;
+        }
+
         showJmeProjectorFragment();
-        String targetScriptPath = this.getIntent().getExtras().getString("targetFile");
-        File targetFile = new File(targetScriptPath);
+        //String targetScriptPath = this.getIntent().getExtras().getString("targetFile");
+        File targetFile = new File(this.targetScriptPath);
         if(targetFile.exists()) {
             new Handler().postDelayed(new Runnable() {
                 @Override

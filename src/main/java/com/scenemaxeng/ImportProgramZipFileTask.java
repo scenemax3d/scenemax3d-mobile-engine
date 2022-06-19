@@ -18,6 +18,7 @@ public class ImportProgramZipFileTask {
     public String error;
     private String targetScriptPath;
     private String resourcesHash="";
+    private boolean importOnlyMetaData = true;// native Android already has all resources in assets folder
 
     public ImportProgramZipFileTask(String filePath, Callback finish) {
 
@@ -189,10 +190,12 @@ public class ImportProgramZipFileTask {
                         }
 
                         String modelPath = model.getString("path");
-                        File srcDir = new File(srcFolder.getAbsolutePath()+"/export_res/"+modelPath).getParentFile();
-                        File destDir = new File(Util.getResourcesFolder()+"/Models/"+srcDir.getName());
-                        destDir.mkdirs();
-                        FileUtils.copyDirectory(srcDir,destDir);
+                        if(!this.importOnlyMetaData) {
+                            File srcDir = new File(srcFolder.getAbsolutePath() + "/export_res/" + modelPath).getParentFile();
+                            File destDir = new File(Util.getResourcesFolder() + "/Models/" + srcDir.getName());
+                            destDir.mkdirs();
+                            FileUtils.copyDirectory(srcDir, destDir);
+                        }
                         currModels.put(model);
                         changed = true;
                     }
@@ -230,10 +233,13 @@ public class ImportProgramZipFileTask {
                             currSprites.remove(index);
                         }
 
-                        String path = sprite.getString("path");
-                        File src = new File(srcFolder.getAbsolutePath()+"/export_res/"+path);
-                        File dest = new File(Util.getResourcesFolder()+"/"+path);
-                        FileUtils.copyFile(src,dest);
+                        if(!this.importOnlyMetaData) {
+                            String path = sprite.getString("path");
+                            File src = new File(srcFolder.getAbsolutePath() + "/export_res/" + path);
+                            File dest = new File(Util.getResourcesFolder() + "/" + path);
+                            FileUtils.copyFile(src, dest);
+                        }
+
                         currSprites.put(sprite);
                         changed = true;
                     }
@@ -272,10 +278,13 @@ public class ImportProgramZipFileTask {
                             currAudio.remove(index);
                         }
 
-                        String path = sound.getString("path");
-                        File src = new File(srcFolder.getAbsolutePath()+"/export_res/"+path);
-                        File dest = new File(Util.getResourcesFolder()+"/"+path);
-                        FileUtils.copyFile(src,dest);
+                        if(!this.importOnlyMetaData) {
+                            String path = sound.getString("path");
+                            File src = new File(srcFolder.getAbsolutePath() + "/export_res/" + path);
+                            File dest = new File(Util.getResourcesFolder() + "/" + path);
+                            FileUtils.copyFile(src, dest);
+                        }
+
                         currAudio.put(sound);
                         changed = true;
                     }
@@ -313,11 +322,13 @@ public class ImportProgramZipFileTask {
                             currSkyboxes.remove(index);
                         }
 
-                        String path = skybox.getString("back");
-                        File srcDir = new File(srcFolder.getAbsolutePath()+"/export_res/"+path).getParentFile();
-                        File destDir = new File(Util.getResourcesFolder()+"/skyboxes/"+srcDir.getName());
-                        destDir.mkdirs();
-                        FileUtils.copyDirectory(srcDir,destDir);
+                        if(!this.importOnlyMetaData) {
+                            String path = skybox.getString("back");
+                            File srcDir = new File(srcFolder.getAbsolutePath() + "/export_res/" + path).getParentFile();
+                            File destDir = new File(Util.getResourcesFolder() + "/skyboxes/" + srcDir.getName());
+                            destDir.mkdirs();
+                            FileUtils.copyDirectory(srcDir, destDir);
+                        }
 
                         currSkyboxes.put(skybox);
                         changed = true;
@@ -331,7 +342,7 @@ public class ImportProgramZipFileTask {
 
             }
 
-         } catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
