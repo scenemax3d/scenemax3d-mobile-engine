@@ -135,27 +135,30 @@ public class ImportProgramZipFileTask {
         }
     }
 
+    private void makeDir(File parent, String dirName) {
+        File f = new File(parent,dirName);
+        if(!f.exists()) {
+            f.mkdirs();
+        }
+    }
+
     private void copyResourcesIndex(File srcFolder, File srcResFile) {
 
         try {
-            File resFolder = new File(Util.getDefaultResourcesFolder());
-            File media = new File(resFolder,"Models");
-            if(!media.exists()) {
-                media.mkdir();
-            }
-            media = new File(resFolder,"sprites");
-            if(!media.exists()) {
-                media.mkdir();
-            }
-            media = new File(resFolder,"audio");
-            if(!media.exists()) {
-                media.mkdir();
-            }
-            media = new File(resFolder,"skyboxes");
-            if(!media.exists()) {
-                media.mkdir();
+            if(this.importOnlyMetaData) {
+                File resFolder = new File(Util.getResourcesFolder());
+                makeDir(resFolder,"Models");
+                makeDir(resFolder,"sprites");
+                makeDir(resFolder,"audio");
+                makeDir(resFolder,"skyboxes");
+
             }
 
+            File resFolder = new File(Util.getDefaultResourcesFolder());
+            makeDir(resFolder,"Models");
+            makeDir(resFolder,"sprites");
+            makeDir(resFolder,"audio");
+            makeDir(resFolder,"skyboxes");
 
             String text = new String(Files.readAllBytes(srcResFile.toPath()));
             JSONObject json = new JSONObject(text);
@@ -166,7 +169,6 @@ public class ImportProgramZipFileTask {
             if(builtInRes==null) {
                 builtInRes = new JSONObject("{\"models\":[]}");
             }
-
 
             JSONArray currBuiltInModels = builtInRes.getJSONArray("models");
             JSONObject res = getResourcesFolderIndex((Util.getResourcesFolder()+"/Models/models-ext.json"));
