@@ -51,6 +51,7 @@ public class FullscreenGameActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         destryed=true;
         if(app!=null) {
             app.getAudioRenderer().cleanup();
