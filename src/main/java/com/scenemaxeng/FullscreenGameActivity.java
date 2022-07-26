@@ -52,14 +52,14 @@ public class FullscreenGameActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        destryed=true;
+        destroyed =true;
         if(app!=null) {
             app.getAudioRenderer().cleanup();
             app.stop(false);
         }
     }
 
-    private boolean destryed = false;
+    private boolean destroyed = false;
 
     @Override
     protected void onStart() {
@@ -67,7 +67,7 @@ public class FullscreenGameActivity extends Activity {
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                if(!destryed) {
+                if(!destroyed) {
                     startGame();
                 }
             }
@@ -90,8 +90,6 @@ public class FullscreenGameActivity extends Activity {
         } else {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         }
-
-        //showJmeProjectorFragment();
 
         joystick = findViewById(R.id.joystick);
         int joystickPos = this.getIntent().getExtras().getInt("joystick");
@@ -139,7 +137,7 @@ public class FullscreenGameActivity extends Activity {
                     joystickState=state;
                     app.observeState((state|LEFT)==state,(state|RIGHT)==state,
                             (state|FORWARD)==state,(state|REVERSE)==state);
-                    //app.viObserveDrag(degrees, offset);
+
                 }
 
             }
@@ -182,12 +180,8 @@ public class FullscreenGameActivity extends Activity {
     public void onBackPressed() {
 
         jmeFragment.clearScene();
-//        new Handler().postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
         FullscreenGameActivity.this.finish();
-//            }
-//        },500);
+
     }
 
     private void startGame() {
@@ -196,7 +190,6 @@ public class FullscreenGameActivity extends Activity {
         }
 
         showJmeProjectorFragment();
-        //String targetScriptPath = this.getIntent().getExtras().getString("targetFile");
         File targetFile = new File(this.targetScriptPath);
         if(targetFile.exists()) {
             new Handler().postDelayed(new Runnable() {
