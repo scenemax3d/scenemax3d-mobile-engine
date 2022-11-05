@@ -4259,6 +4259,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         if(m!=null) {
 
             if(chaseCam!=null) {
+                setChaseCameraAttributes(chaseCam, cmd);
                 chaseCam.setSpatial(m);
                 chaseCam.setEnabled(true);
                 return;
@@ -4269,39 +4270,42 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             cm.setTrailingEnabled(true);
             cm.setChasingSensitivity(1.5f);
             cm.setTrailingSensitivity(5f);
+            setChaseCameraAttributes(cm, cmd);
+            cm.setSpatial(m);
+            cm.setUpVector(Vector3f.UNIT_Y);
+            chaseCam = cm;
 
-            if (cmd.havingAttributesExists) {
+        }
 
-                if (!cmd.trailing) {
-                    cm.setTrailingEnabled(false);
-                }
+    }
 
-                if (cmd.verticalRotationVal != null) {
-                    cm.setDefaultVerticalRotation(cmd.verticalRotationVal.floatValue() * FastMath.DEG_TO_RAD);
-                }
+    private void setChaseCameraAttributes(SceneMaxChaseCamera cm, ChaseCameraCommand cmd) {
 
-                if (cmd.horizontalRotationVal != null) {
-                    cm.setDefaultHorizontalRotation(cmd.horizontalRotationVal.floatValue() * FastMath.DEG_TO_RAD);
-                }
+        if (cmd.havingAttributesExists) {
 
-                if (cmd.rotationSpeedVal != null) {
-                    cm.setRotationSpeed(cmd.rotationSpeedVal.floatValue());
-                }
-
-                if (cmd.minDistanceVal != null) {
-                    cm.setMinDistance(cmd.minDistanceVal.floatValue());
-                }
-
-                if (cmd.maxDistanceVal != null) {
-                    cm.setMaxDistance(cmd.maxDistanceVal.floatValue());
-                }
-
-                cm.setSpatial(m);
-                cm.setUpVector(Vector3f.UNIT_Y);
-
+            if (!cmd.trailing) {
+                cm.setTrailingEnabled(false);
             }
 
-            chaseCam = cm;
+            if (cmd.verticalRotationVal != null) {
+                cm.setDefaultVerticalRotation(cmd.verticalRotationVal.floatValue() * FastMath.DEG_TO_RAD);
+            }
+
+            if (cmd.horizontalRotationVal != null) {
+                cm.setDefaultHorizontalRotation(cmd.horizontalRotationVal.floatValue() * FastMath.DEG_TO_RAD);
+            }
+
+            if (cmd.rotationSpeedVal != null) {
+                cm.setRotationSpeed(cmd.rotationSpeedVal.floatValue());
+            }
+
+            if (cmd.minDistanceVal != null) {
+                cm.setMinDistance(cmd.minDistanceVal.floatValue());
+            }
+
+            if (cmd.maxDistanceVal != null) {
+                cm.setMaxDistance(cmd.maxDistanceVal.floatValue());
+            }
 
         }
 
