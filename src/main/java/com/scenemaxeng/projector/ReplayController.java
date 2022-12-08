@@ -2,7 +2,9 @@ package com.scenemaxeng.projector;
 
 import com.abware.scenemaxlang.parser.SceneMaxParser;
 import com.jme3.math.FastMath;
+import com.jme3.math.Quaternion;
 import com.jme3.scene.Spatial;
+import com.scenemaxeng.compiler.MoveToCommand;
 import com.scenemaxeng.compiler.ProgramDef;
 import com.scenemaxeng.compiler.ReplayCommand;
 
@@ -21,6 +23,7 @@ public class ReplayController extends SceneMaxBaseController {
 
     public static HashMap<String, ReplayController> controllers = new HashMap<>();
 
+
     public ReplayController(SceneMaxApp app, ProgramDef prg, SceneMaxThread thread, ReplayCommand cmd) {
         super(app,prg,thread,cmd);
     }
@@ -35,13 +38,7 @@ public class ReplayController extends SceneMaxBaseController {
             findTargetVar();
 
             if(this.command.option==ReplayCommand.STOP) {
-
-                ReplayController ctl = controllers.get(targetVar);
-                if(ctl!=null) {
-                    ctl.forceStop=true;
-                    controllers.remove(targetVar);
-                }
-
+                stopPreviousController();
                 return true;
             }
 
@@ -85,35 +82,15 @@ public class ReplayController extends SceneMaxBaseController {
                 if(ctl!=null) {
                     data = thread.getVar(cmd.dataArrayName);
                     ctl.setData(data);
+                    ctl.setThread(thread);
+                    ctl.command = cmd;
 
-                    if(cmd.offsetXExpr!=null) {
-                        ctl.command.offsetXExpr = cmd.offsetXExpr;
-                    }
-
-                    if(cmd.offsetYExpr!=null) {
-                        ctl.command.offsetYExpr = cmd.offsetYExpr;
-                    }
-
-                    if(cmd.offsetZExpr!=null) {
-                        ctl.command.offsetZExpr = cmd.offsetZExpr;
-                    }
-
-                    if(cmd.offsetRXExpr!=null) {
-                        ctl.command.offsetRXExpr = cmd.offsetRXExpr;
-                    }
-
-                    if(cmd.offsetRYExpr!=null) {
-                        ctl.command.offsetRYExpr = cmd.offsetRYExpr;
-                    }
-
-                    if(cmd.offsetRZExpr!=null) {
-                        ctl.command.offsetRZExpr = cmd.offsetRZExpr;
-                    }
                 }
 
                 return true;
             }
 
+            stopPreviousController();
             controllers.put(targetVar,this);
 
             data = thread.getVar(cmd.dataArrayName);
@@ -147,6 +124,14 @@ public class ReplayController extends SceneMaxBaseController {
         }
 
         return shouldStop;
+    }
+
+    private void stopPreviousController() {
+        ReplayController ctl = controllers.get(targetVar);
+        if(ctl!=null) {
+            ctl.forceStop=true;
+            controllers.remove(targetVar);
+        }
     }
 
     public void setSpeed(SceneMaxParser.Logical_expressionContext speedExpr) {

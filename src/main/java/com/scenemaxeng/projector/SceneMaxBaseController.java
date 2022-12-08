@@ -139,4 +139,7 @@ public class SceneMaxBaseController implements ISceneMaxController {
 
     }
 
+    protected void setThread(SceneMaxThread thread) {
+        this.thread = thread;
+    }
 }
