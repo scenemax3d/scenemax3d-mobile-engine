@@ -418,6 +418,8 @@ public class ImportProgramZipFileTask {
 
                     if (config.has("scriptFile")) {
                         targetScriptFile=config.getString("scriptFile");
+                    } else {
+                        targetScriptFile = "main";
                     }
 
                     if (config.has("resOnly")) {
