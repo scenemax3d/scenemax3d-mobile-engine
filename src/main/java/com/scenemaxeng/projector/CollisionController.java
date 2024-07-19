@@ -3,6 +3,7 @@ package com.scenemaxeng.projector;
 import com.scenemaxeng.compiler.CollisionStatementCommand;
 import com.scenemaxeng.compiler.DoBlockCommand;
 import com.scenemaxeng.compiler.ProgramDef;
+import com.scenemaxeng.compiler.VariableDef;
 
 public class CollisionController extends CompositeController {
 
@@ -18,21 +19,39 @@ public class CollisionController extends CompositeController {
         if(forceStop) return true;
 
         CollisionStatementCommand collCmd = (CollisionStatementCommand)this.cmd;
-        RunTimeVarDef rt1 = findTargetVar(collCmd.varDef1.varName);
-        RunTimeVarDef rt2 = findTargetVar(collCmd.varDef2.varName);
-        this.targetVar1 = rt1.varName;
+        //RunTimeVarDef rt1 = findTargetVar(collCmd.varDef1.varName);
+        RunTimeVarDef rt2 = findTargetVar(collCmd.destEntity.varName);
+        //this.targetVar1 = rt1.varName;
         this.targetVar2 = rt2.varName;
 
         DoBlockCommand cmd = collCmd.doBlock;
-        DoBlockController c = new DoBlockController(app, thread, cmd);
+        DoBlockController collisionController = new DoBlockController(app, thread, cmd);
 
-        c.app = app;
-        c.async = cmd.isAsync;
+        collisionController.app = app;
+        collisionController.async = cmd.isAsync;
 
-        app.addCollisionHandler(this.targetVar1,this.targetVar2,c,
-                thread.getEntityInst(collCmd.varDef1.varName),
-                thread.getEntityInst(collCmd.varDef2.varName),
-                collCmd.part1, collCmd.part2, collCmd.goExpr);
+        int counter = 0;
+        for (VariableDef vd : collCmd.sourceEntities) {
+            RunTimeVarDef rt1 = findTargetVar(vd.varName);
+
+            app.addCollisionHandler(
+                    rt1.varName,
+                    rt2.varName,
+                    collisionController,
+                    thread.getEntityInst(vd.varName),
+                    thread.getEntityInst(collCmd.destEntity.varName),
+                    collCmd.sourceJoints.get(counter),
+                    collCmd.destJoint,
+                    collCmd.goExpr);
+        }
+
+//        app.addCollisionHandler(this.targetVar1,this.targetVar2,
+//                collisionController,
+//                thread.getEntityInst(collCmd.varDef1.varName),
+//                thread.getEntityInst(collCmd.varDef2.varName),
+//                collCmd.part1,
+//                collCmd.part2,
+//                collCmd.goExpr);
 
         return true;
 

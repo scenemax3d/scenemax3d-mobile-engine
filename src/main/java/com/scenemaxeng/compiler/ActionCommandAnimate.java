@@ -9,4 +9,6 @@ public class ActionCommandAnimate extends VariableActionStatement {
     public ParserRuleContext speedExpr;
     public boolean loop;
     public SceneMaxParser.Logical_expressionContext goExpr;
+    public boolean isProtected = false;
+
 }

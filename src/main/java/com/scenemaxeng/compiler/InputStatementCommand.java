@@ -9,6 +9,7 @@ public class InputStatementCommand extends ActionStatementBase {
     public DoBlockCommand doBlock;
     public boolean once;
     public SceneMaxParser.Logical_expressionContext goExpr;
+    public boolean released = false;
 
     @Override
     public boolean validate(ProgramDef prg) {

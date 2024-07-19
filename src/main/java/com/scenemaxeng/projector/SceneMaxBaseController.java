@@ -9,6 +9,7 @@ public class SceneMaxBaseController implements ISceneMaxController {
     public boolean adhereToPauseStatus = true;
     protected boolean targetCalculated = false;
     public boolean isInitiated = false;
+    public boolean isEventHandler = false;
     public boolean forceStop = false;
     public boolean async=false;
     public boolean isRunning;
@@ -106,11 +107,21 @@ public class SceneMaxBaseController implements ISceneMaxController {
 
     protected int findTargetVar() {
 
-        if (cmd.varDef.varType == VariableDef.VAR_TYPE_SPHERE || cmd.varDef.varType == VariableDef.VAR_TYPE_BOX) {
-            int threadId = app.getEntityThreadId(thread, cmd.varDef.varName, cmd.varDef.varType);
-            this.targetVar = cmd.varDef.varName + "@" + threadId;
-        } else if (cmd.varDef.varType == VariableDef.VAR_TYPE_OBJECT) {
-            EntityInstBase obj = (EntityInstBase) thread.getFuncScopeParam(cmd.varDef.varName);
+        VariableDef varDef = cmd.varDef;
+        VarInst vi = thread.getVar(cmd.varDef.varName);
+        if (vi != null && vi.value instanceof EntityInstBase) {
+            varDef = ((EntityInstBase) vi.value).varDef;
+            targetVarDef = varDef;
+            this.targetVar = varDef.varName + "@" + ((EntityInstBase) vi.value).thread.threadId;
+        }
+
+        if (varDef.varType == VariableDef.VAR_TYPE_SPHERE || varDef.varType == VariableDef.VAR_TYPE_BOX) {
+            if (this.targetVar == null) {
+                int threadId = app.getEntityThreadId(thread, varDef.varName, varDef.varType);
+                this.targetVar = varDef.varName + "@" + threadId;
+            }
+        } else if (varDef.varType == VariableDef.VAR_TYPE_OBJECT) {
+            EntityInstBase obj = (EntityInstBase) thread.getFuncScopeParam(varDef.varName);
 
             if (obj == null) {
                 app.handleRuntimeError("Function argument '" + cmd.varDef.varName + "' is undefined");
@@ -121,17 +132,19 @@ public class SceneMaxBaseController implements ISceneMaxController {
             targetVarDef = new VariableDef();// in order to avoid overriding varType
             targetVarDef.varType = obj.varDef.varType;
         } else if (cmd.varDef.varType != VariableDef.VAR_TYPE_CAMERA) {
-            if(cmd.varDef.varType==0) {
-                VarInst vi = thread.getVar(cmd.varDef.varName);
-                if(vi.varReference!=null) {
-                    int threadId = app.getEntityThreadId(thread, vi.varReference.varName);
-                    this.targetVar = vi.varReference.varName + "@" + threadId;
-                    targetVarDef = new VariableDef();// in order to avoid overriding varType
-                    targetVarDef.varType = vi.varReference.varType;
+            if (this.targetVar == null) {
+                if (cmd.varDef.varType == 0) {
+                    //VarInst vi = thread.getVar(cmd.varDef.varName);
+                    if (vi.varReference != null) {
+                        int threadId = app.getEntityThreadId(thread, vi.varReference.varName);
+                        this.targetVar = vi.varReference.varName + "@" + threadId;
+                        targetVarDef = new VariableDef();// in order to avoid overriding varType
+                        targetVarDef.varType = vi.varReference.varType;
+                    }
+                } else {
+                    int threadId = app.getEntityThreadId(thread, cmd.varDef.varName);
+                    this.targetVar = cmd.varDef.varName + "@" + threadId;
                 }
-            } else {
-                int threadId = app.getEntityThreadId(thread, cmd.varDef.varName);
-                this.targetVar = cmd.varDef.varName + "@" + threadId;
             }
         }
 

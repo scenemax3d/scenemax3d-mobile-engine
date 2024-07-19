@@ -5,6 +5,7 @@ import com.jme3.bullet.BulletAppState;
 import com.jme3.material.Material;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
+import com.scenemaxeng.common.types.TerrainResource;
 //import com.jme3.terrain.geomipmap.TerrainQuad;
 
 

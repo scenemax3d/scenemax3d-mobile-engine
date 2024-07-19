@@ -8,6 +8,7 @@ public class CompositeController extends SceneMaxBaseController {
 
     protected ArrayList<SceneMaxBaseController> _controllers = new ArrayList<>();
     protected int runningControllerIndex=0;
+    private int eventHandlersCount;
 
     public CompositeController() {
 
@@ -28,6 +29,9 @@ public class CompositeController extends SceneMaxBaseController {
     public void add(SceneMaxBaseController c) {
         _controllers.add(c);
         c.parentController = this;
+        if(c.isEventHandler) {
+            this.eventHandlersCount++;
+        }
     }
 
     public void remove(SceneMaxBaseController c) {
@@ -61,7 +65,10 @@ public class CompositeController extends SceneMaxBaseController {
     @Override
     public boolean run(float tpf) {
 
-        if(forceStop || _controllers.size()==0) return true;
+        if(forceStop || _controllers.size()==this.eventHandlersCount) {
+            this.unregisterEventHandlers();
+            return true;
+        }
 
         SceneMaxBaseController ctl = _controllers.get(runningControllerIndex);
         boolean finished = false;
@@ -87,6 +94,7 @@ public class CompositeController extends SceneMaxBaseController {
             if(runningControllerIndex < _controllers.size()) {
                 return false;
             } else {
+                this.unregisterEventHandlers();
                 return true; // no more controllers to run
             }
 
@@ -94,7 +102,14 @@ public class CompositeController extends SceneMaxBaseController {
 
         return false; // current controller not finished
 
+    }
 
+    private void unregisterEventHandlers() {
+        for(int i=0;i<_controllers.size();++i) {
+            if (_controllers.get(i).isEventHandler) {
+                _controllers.get(i).forceStop = true;
+            }
+        }
     }
 
     public void forceStop() {

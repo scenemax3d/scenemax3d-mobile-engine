@@ -1,5 +1,6 @@
 package com.scenemaxeng.compiler;
 
+import com.abware.scenemaxlang.parser.SceneMaxParser;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 public class ActionCommandMove extends VariableActionStatement {
@@ -19,7 +20,7 @@ public class ActionCommandMove extends VariableActionStatement {
     //public String speed;
     public ParserRuleContext numExpr;
     public ParserRuleContext speedExpr;
-
+    public SceneMaxParser.Loop_exprContext loopExpr;
 
     @Override
     public boolean validate(ProgramDef prg) {

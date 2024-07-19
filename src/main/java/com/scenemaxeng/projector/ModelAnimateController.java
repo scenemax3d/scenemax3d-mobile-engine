@@ -1,6 +1,8 @@
 package com.scenemaxeng.projector;
 
 import com.scenemaxeng.compiler.ActionCommandAnimate;
+import com.scenemaxeng.compiler.ProgramDef;
+import com.scenemaxeng.compiler.VariableDef;
 
 public class ModelAnimateController extends SceneMaxBaseController {
 
@@ -11,14 +13,10 @@ public class ModelAnimateController extends SceneMaxBaseController {
     private boolean reused;
     private ActionCommandAnimate cmdAnim = null;
 
-    public ModelAnimateController(SceneMaxApp app, ActionCommandAnimate cmd, SceneMaxThread thread) {
-        this.app=app;
-        this.cmd=cmd;
+    public ModelAnimateController(SceneMaxApp app, ProgramDef prg, ActionCommandAnimate cmd, SceneMaxThread thread) {
+        super(app, prg, thread, cmd);
         this.cmdAnim = (ActionCommandAnimate)this.cmd;
-        this.thread=thread;
         speedExpr = cmd.speedExpr==null?null:new ActionLogicalExpression(cmd.speedExpr,thread);
-        targetVarDef=cmd.varDef;
-
         this.adhereToPauseStatus=false;
     }
 
@@ -49,6 +47,7 @@ public class ModelAnimateController extends SceneMaxBaseController {
 
             animationStarted=true;
             controller=new AppModelAnimationController(this);
+            controller.isProtected = this.cmdAnim.isProtected;
             speed=speedExpr==null?"1":speedExpr.evaluate().toString();
 
             if(cmd.varDef==null) {
@@ -61,9 +60,6 @@ public class ModelAnimateController extends SceneMaxBaseController {
             app.animateModel(this.targetVar, ((ActionCommandAnimate)this.cmd).animationName, speed, controller);
 
         } else {
-//            if(!checkGoExpr()) {
-//                return true;
-//            }
             if(reused) {
                 this.reused=false;
                 app.animateModel(this.targetVar, ((ActionCommandAnimate)this.cmd).animationName, speed, controller);

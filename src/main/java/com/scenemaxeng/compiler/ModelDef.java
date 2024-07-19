@@ -6,5 +6,4 @@ public class ModelDef extends StatementDef {
     public String from = null;
     public boolean isVehicle;
 
-
 }

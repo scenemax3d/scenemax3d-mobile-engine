@@ -13,6 +13,7 @@ import com.jme3.math.Transform;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
+import com.scenemaxeng.common.types.ResourceSetup;
 
 import java.util.Collection;
 import java.util.List;

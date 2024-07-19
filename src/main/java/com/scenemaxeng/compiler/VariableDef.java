@@ -1,13 +1,14 @@
 package com.scenemaxeng.compiler;
 
 import com.abware.scenemaxlang.parser.SceneMaxParser;
-
 import org.antlr.v4.runtime.ParserRuleContext;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class VariableDef extends StatementDef{
 
+    public boolean isAsync = false;
     public static final int COLLISION_SHAPE_DEFAULT = 0;
     public static final int COLLISION_SHAPE_BOX = 10;
     public static final int COLLISION_SHAPE_BOXES = 20;
@@ -21,7 +22,7 @@ public class VariableDef extends StatementDef{
     public static final int VAR_TYPE_SPHERE = 20;
     public static final int VAR_TYPE_OBJECT = 30;
     public static final int VAR_TYPE_BOX = 40;
-
+    public static final int VAR_TYPE_EXPR_POINTER = 50;
     //public int threadId;
 
     public String resName;
@@ -54,14 +55,15 @@ public class VariableDef extends StatementDef{
     public String entityPosJoint;
     public EntityPos calibration;
     public int collisionShape;
+    public boolean isExprPointer;
+    public VariableDeclarationCommand declaration;
+    public boolean isShared;
 
     @Override
     public boolean validate(ProgramDef prg) {
         ModelDef md = prg.getModel(resName);
-        //ModelDef md = prg.models.get(resName);
         if (md == null) {
             SpriteDef sd = prg.getSprite(resName);
-            //SpriteDef sd = prg.sprites.get(resName);
             if(sd==null) {
                 //System.err.println(varName + " cannot use resource " + resName + " because this resource is not defined yet");
                 return false;

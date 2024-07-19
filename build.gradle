@@ -48,13 +48,13 @@ dependencies {
 
     implementation("com.google.guava:guava:30.1.1-android")
     implementation 'com.jmedeisis:bugstick:0.2.2'
-    implementation "org.jmonkeyengine:jme3-core:3.5.2-stable"
+    implementation "org.jmonkeyengine:jme3-core:3.6.1-stable"
     implementation "org.jmonkeyengine:jme3-effects:3.5.2-stable"
     implementation "org.jmonkeyengine:jme3-android-native:3.5.2-stable"
     implementation 'com.github.stephengold:SkyControl:1.0.2'
     implementation group: 'commons-io', name: 'commons-io', version: '2.0.1'
     implementation 'com.github.stephengold:MaVehicles:0.7.0'
-    implementation "com.github.stephengold:Minie:5.0.0"
+    implementation "com.github.stephengold:Minie:8.0.0"
     implementation 'com.github.stephengold:Garrett:0.4.0'
     implementation "org.antlr:antlr4-runtime:4.9.3"
 

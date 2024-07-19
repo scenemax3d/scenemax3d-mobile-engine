@@ -106,6 +106,7 @@ public class ActionLogicalExpression extends ActionStatementBase {
 
         public Object visitRelationalExpression(SceneMaxParser.RelationalExpressionContext ctx) {
 
+            Object leftObj = null;
             Double left = 0.0;
             Boolean retval = true;
             String leftStr="";
@@ -116,7 +117,15 @@ public class ActionLogicalExpression extends ActionStatementBase {
                     ctx.getChild(i).accept(this);
 
                     if(isObject) {
-                        return true;
+                        if (leftObj == null) {
+                            leftObj = res;
+                            continue;
+                        }
+
+                        if (!(leftObj instanceof EntityInstBase)) {
+                            return true;
+                        }
+
                     }
 
                     if(sign.equals("==")) {
@@ -155,6 +164,8 @@ public class ActionLogicalExpression extends ActionStatementBase {
                         } else {
                             retval = left <= Double.parseDouble(res.toString());
                         }
+                    } else if(sign.startsWith("collides")) {
+                        retval = ActionLogicalExpression.app.checkCollision((EntityInstBase)leftObj, (EntityInstBase)res);
                     } else {
                         if(isResString) {
                             leftStr = res.toString();
@@ -171,7 +182,7 @@ public class ActionLogicalExpression extends ActionStatementBase {
                 }
             }
 
-            // only if there was a equality sign involve return boolean otherwise return the result number itself
+            // only if there was an equality sign involve return boolean otherwise return the result number itself
             if(sign.length()>0) {
                 isResBool=true;
                 isResString=false;
@@ -360,10 +371,24 @@ public class ActionLogicalExpression extends ActionStatementBase {
                     hasRuntimeError=true;
                     app.handleRuntimeError("Line: "+ctx.start.getLine()+", "+fi.runtimeError);
                 }
-            } else if(ctx.csharp_register()!=null) {
-                res = thread.getCSharpRegisterValue(ctx.csharp_register().res_var_decl().get(0).getText());
-                if(res instanceof String) {
+            }  else if(ctx.logical_expression_pointer()!=null) {
+                String varName = ctx.logical_expression_pointer().var_decl().getText();
+                VarInst vi = thread.getVar(varName);
+                if (vi == null) {
+                    hasRuntimeError = true;
+                    app.handleRuntimeError("Line " + ctx.start.getLine() + ": Logical expression pointer '" + varName + "' not found");
+                    return null;
+                }
+
+                res = new ActionLogicalExpression((ParserRuleContext) vi.value, thread).evaluate();
+                if (res instanceof Boolean) {
+                    isResBool = true;
+                } else if (res instanceof String) {
                     turnOnIsString();
+                } else if (res instanceof List) {
+                    isObject = true;
+                } else if (res instanceof EntityInstBase) {
+                    isObject = true;
                 }
             } else if(ctx.fetch_array_value()!=null) {
                 String varName = ctx.fetch_array_value().var_decl().getText();

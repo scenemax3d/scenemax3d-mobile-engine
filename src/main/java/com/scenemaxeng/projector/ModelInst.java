@@ -1,12 +1,12 @@
 package com.scenemaxeng.projector;
 
 import com.scenemaxeng.compiler.ModelDef;
+import com.scenemaxeng.compiler.ProgramDef;
 import com.scenemaxeng.compiler.VariableDef;
 
 public class ModelInst extends EntityInstBase{
 
     public ModelDef modelDef;
-
     public ActionLogicalExpression scaleExpr;
     public ActionLogicalExpression massExpr;
     public ActionLogicalExpression xExpr;

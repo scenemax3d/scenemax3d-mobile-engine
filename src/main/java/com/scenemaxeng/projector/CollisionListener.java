@@ -1,6 +1,4 @@
 package com.scenemaxeng.projector;
-
-
 import com.jme3.bullet.animation.PhysicsLink;
 import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.PhysicsCollisionListener;
@@ -11,7 +9,7 @@ import com.jme3.scene.Spatial;
 
 public class CollisionListener extends RigidBodyControl implements PhysicsCollisionListener {
 
-    private static GenericDataTransformer genericData = new GenericDataTransformer();
+    //private static GenericDataTransformer genericData = new GenericDataTransformer();
     private final SceneMaxApp app;
     private Vector3f ptA = new Vector3f();
     private Vector3f ptB = new Vector3f();

@@ -15,7 +15,7 @@ public class ProgramDef {
     public static final int VAR_TYPE_CAMERA = 10; // aligned with VariableDef.VAR_TYPE_CAMERA
     public static final int VAR_TYPE_SPHERE = 20; // aligned with VariableDef.VAR_TYPE_SPHERE
 
-//
+    //
     public int scopeId = ++scopeSeq;
     public List<String> syntaxErrors = new ArrayList<>();
     public ArrayList<VariableDef> vars = new ArrayList<>();
@@ -115,6 +115,22 @@ public class ProgramDef {
             return def;
         }
 
+
+    }
+
+    public void copySharedEntities(ProgramDef prevPrg) {
+        if (prevPrg == null) {
+            return;
+        }
+
+        prevPrg.vars_index.forEach((key, varDef) -> {
+            if (varDef.isShared) {
+                this.vars_index.put(key, varDef);
+                if (varDef.varType == VAR_TYPE_3D) {
+                    this.models.put(varDef.resName, prevPrg.models.get(varDef.resName));
+                }
+            }
+        });
 
     }
 }

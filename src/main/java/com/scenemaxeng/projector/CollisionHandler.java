@@ -3,6 +3,7 @@ package com.scenemaxeng.projector;
 import com.abware.scenemaxlang.parser.SceneMaxParser;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
+import com.jme3.scene.Spatial;
 
 public class CollisionHandler {
 
@@ -18,8 +19,8 @@ public class CollisionHandler {
         if(sprite1==null) return true;
 
         if(sprite2!=null) {
-            Geometry g1 = sprite1.getGeometry();
-            Geometry g2 = sprite2.getGeometry();
+            Spatial g1 = sprite1.getSpatial();
+            Spatial g2 = sprite2.getSpatial();
 
             Vector3f vec1 = g1.getWorldTranslation();
             Vector3f vec2 = g2.getWorldTranslation();

@@ -1,6 +1,8 @@
 package com.scenemaxeng.projector;
 
-
+import com.jayfella.jme.vehicle.skid.SkidMarksState;
+import com.jme3.app.state.AppState;
+import com.jme3.bullet.collision.PhysicsCollisionObject;
 import com.abware.scenemaxlang.parser.SceneMaxParser;
 import com.epaga.particles.Emitter;
 import com.epaga.particles.ParticleHelper;
@@ -99,6 +101,14 @@ import com.jme3.ui.Picture;
 import com.jme3.util.SkyFactory;
 import com.jme3.util.TangentBinormalGenerator;
 import com.jme3.water.WaterFilter;
+import com.scenemaxeng.common.types.AssetsMapping;
+import com.scenemaxeng.common.types.CanvasRect;
+import com.scenemaxeng.common.types.IAppObserver;
+import com.scenemaxeng.common.types.ResourceAudio;
+import com.scenemaxeng.common.types.ResourceFont;
+import com.scenemaxeng.common.types.ResourceSetup;
+import com.scenemaxeng.common.types.ResourceSetup2D;
+import com.scenemaxeng.common.types.SkyBoxResource;
 import com.scenemaxeng.compiler.AccelerateCommand;
 import com.scenemaxeng.compiler.ActionCommandAnimate;
 import com.scenemaxeng.compiler.ActionCommandMove;
@@ -113,6 +123,7 @@ import com.scenemaxeng.compiler.ActionScaleCommand;
 import com.scenemaxeng.compiler.ActionStatementBase;
 import com.scenemaxeng.compiler.AddEntityToGroupCommand;
 import com.scenemaxeng.compiler.AnimateOptionsCommand;
+import com.scenemaxeng.compiler.ArrayCommand;
 import com.scenemaxeng.compiler.AttachToCommand;
 import com.scenemaxeng.compiler.BoxVariableDef;
 import com.scenemaxeng.compiler.CSharpInvokeCommand;
@@ -124,6 +135,7 @@ import com.scenemaxeng.compiler.ChangeDebugMode;
 import com.scenemaxeng.compiler.ChangeMassCommand;
 import com.scenemaxeng.compiler.ChangeVelocityCommand;
 import com.scenemaxeng.compiler.ChannelDrawCommand;
+import com.scenemaxeng.compiler.CharacterIgnoreCommand;
 import com.scenemaxeng.compiler.CharacterJumpCommand;
 import com.scenemaxeng.compiler.ChaseCameraCommand;
 import com.scenemaxeng.compiler.CheckIsStaticCommand;
@@ -133,6 +145,7 @@ import com.scenemaxeng.compiler.CreateSpriteCommand;
 import com.scenemaxeng.compiler.DettachFromParentCommand;
 import com.scenemaxeng.compiler.DirectionalMoveCommand;
 import com.scenemaxeng.compiler.DoBlockCommand;
+import com.scenemaxeng.compiler.ForCommand;
 import com.scenemaxeng.compiler.ForEachCommand;
 import com.scenemaxeng.compiler.FpsCameraCommand;
 import com.scenemaxeng.compiler.FunctionBlockDef;
@@ -166,6 +179,7 @@ import com.scenemaxeng.compiler.SphereVariableDef;
 import com.scenemaxeng.compiler.StatementDef;
 import com.scenemaxeng.compiler.StopBlockCommand;
 import com.scenemaxeng.compiler.SwitchModeCommand;
+import com.scenemaxeng.compiler.SwitchStateCommand;
 import com.scenemaxeng.compiler.TerrainCommand;
 import com.scenemaxeng.compiler.VariableAssignmentCommand;
 import com.scenemaxeng.compiler.VariableDef;
@@ -173,6 +187,7 @@ import com.scenemaxeng.compiler.VehicleSetupCommand;
 import com.scenemaxeng.compiler.WaitForCommand;
 import com.scenemaxeng.compiler.WaitStatementCommand;
 import com.scenemaxeng.compiler.WaterShowCommand;
+import com.scenemaxeng.compiler.WhenStateCommand;
 import com.scenemaxeng.projector.outliner.OutlineFilter;
 import com.scenemaxeng.projector.outliner.SelectObjectOutliner;
 
@@ -187,27 +202,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import jme3utilities.sky.SkyControl;
 import jme3utilities.sky.StarsOption;
-
-//import com.jme3.niftygui.NiftyJmeDisplay;
-//import com.simsilica.lemur.*;
-//import com.simsilica.lemur.Button;
-//import com.simsilica.lemur.Container;
-//import com.simsilica.lemur.Label;
-//import com.simsilica.lemur.component.QuadBackgroundComponent;
-//import com.simsilica.lemur.component.TbtQuadBackgroundComponent;
-//import com.simsilica.lemur.style.Attributes;
-//import com.simsilica.lemur.style.Styles;
-//import de.lessvoid.nifty.Nifty;
-//import de.lessvoid.nifty.screen.Screen;
-//import org.lwjgl.opengl.Display;
-//import javax.imageio.ImageIO;
-//import java.awt.image.BufferedImage;
-
 
 public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiProxy, IApplicationChannel, IVirtualInputObserver {
 
@@ -225,6 +226,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
     private HashMap<String,CollisionHandler> collisionHandlers = new HashMap<>();
     private HashMap<String,UserInputDoBlockController> inputHandlers = new HashMap<>();
+    private HashMap<String,UserInputDoBlockController> releaseInputHandlers = new HashMap<>();
 
     private HashMap<String,Integer> keyMapping = new HashMap<>();
     //private HashMap<String, java.lang.Object> csharpRegisters = new HashMap<>();
@@ -240,7 +242,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
     private HashMap<String, List<Object>> collisionControlsCache=new HashMap<>();
     private HashMap<String, SpriteEmitter> sprites = new HashMap<String, SpriteEmitter>();
-    private AssetsMapping assetsMapping = null;//new AssetsMapping();
+    private static AssetsMapping assetsMapping = null;//new AssetsMapping();
     private HashMap<String, AudioNode> _audioNodes = new HashMap<>();
     private HashMap<String, BitmapText> _printChannels = new HashMap<>();
     private HashMap<String, PictureExt> _drawChannels = new HashMap<>();
@@ -258,6 +260,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
     public boolean scenePaused;
     private WaterFilter water;
     private String workingFolder;
+    private String currentLevel = "";
     private String entryScriptFileName;
     private ProgramDef prg;
     private SceneMaxBaseController lastWaitController;
@@ -282,6 +285,25 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
     private boolean _joystickForward;
     private boolean _joystickBackward;
 
+    private ExecutorService executorService = null;
+    private RunTimeVarDef cameraRuntimeVarDef = null;
+    private int eventHandlersCount;
+    private String switchStateCode = null;
+
+    public void clearThreads() {
+        if (executorService!=null) {
+            executorService.shutdown();
+        }
+    }
+
+    public void initThreads() {
+        executorService = Executors.newFixedThreadPool(2);
+    }
+
+    public ExecutorService getExecutorService() {
+        return executorService;
+    }
+
     public SceneMaxApp(int hostAppType) {
         this();
         this.hostAppType=hostAppType;
@@ -294,6 +316,10 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         this.showSettings=false;
         initKeyMapping();
 
+        VariableDef camVarDef = new VariableDef();
+        camVarDef.varName = "camera";
+        camVarDef.varType = VariableDef.VAR_TYPE_CAMERA;
+        cameraRuntimeVarDef = new RunTimeVarDef(camVarDef);
     }
 
     @Override
@@ -318,6 +344,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             JmeSystem.showErrorDialog(errMsg);
         }
 
+        this.clearThreads();
         this.stop();
     }
 
@@ -435,15 +462,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         }
 
         // bullet init
-        if(bulletAppState==null) {
-            bulletAppState = new BulletAppState();
-
-        }
-
-        stateManager.attach(bulletAppState);
-        collisionListener = new CollisionListener(this);
-        bulletAppState.getPhysicsSpace().addCollisionListener(collisionListener);
-
+        initBulletAppState();
 //////////////////////////////////////////////////////
 
         this.setDisplayFps(false);
@@ -465,10 +484,24 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
         //addConsoleShowHideListener();
 
-        stateManager.attachAll(
+        stateManager.attach(
             new ChunkManager()
         );
 
+    }
+
+    public AssetsMapping getAssetsMapping() {
+        return SceneMaxApp.assetsMapping;
+    }
+
+    private void initBulletAppState() {
+        if(bulletAppState==null) {
+            bulletAppState = new BulletAppState();
+        }
+
+        stateManager.attach(bulletAppState);
+        collisionListener = new CollisionListener(this);
+        bulletAppState.getPhysicsSpace().addCollisionListener(collisionListener);
     }
 
     private final ActionListener addResourceShowHideListener = new ActionListener() {
@@ -748,12 +781,12 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         this.runOnGlThread(new Runnable() {
             @Override
             public void run() {
+                SceneMaxApp.this.clearThreads();
                 groups.clear();
                 _controllers.clear();
-                geoName2ModelName.clear();
-                geoName2EntityInst.clear();
                 collisionHandlers.clear();
                 inputHandlers.clear();
+                releaseInputHandlers.clear();
                 sprites.clear();
 
                 for(AudioNode n:_audioNodes.values()) {
@@ -762,10 +795,33 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
                 _audioNodes.clear();
                 _printChannels.clear();
                 _drawChannels.clear();
-                collisionControlsCache.clear();
-                models.clear();
 
-                rootNode.detachAllChildren();
+                for (Object key : models.keySet().toArray()) {
+                    AppModel am = models.get(key);
+                    if (!am.entityInst.varDef.isShared) {
+                        SceneMaxApp.this.killModel((String) key);
+                    }
+                }
+
+                for (Object key : boxes.keySet().toArray()) {
+                    if (!geoName2EntityInst.get(key).varDef.isShared) {
+                        SceneMaxApp.this.killBox((String) key);
+                    }
+                }
+
+                for (Object key : spheres.keySet().toArray()) {
+                    if (!geoName2EntityInst.get(key).varDef.isShared) {
+                        SceneMaxApp.this.killSphere((String) key);
+                    }
+                }
+
+                //collisionControlsCache.clear();
+                //geoName2ModelName.clear();
+                //geoName2EntityInst.clear();
+
+                //rootNode.detachAllChildren();
+                rootNode.removeControl(SkinningControl.class);
+                SceneMaxApp.this.skyControl = null;
                 guiNode.detachAllChildren();
 
                 if (cam != null) {
@@ -775,8 +831,12 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
                     SceneMaxApp.this.cam.setRotation(q);
                 }
 
-                assetManager.clearCache();
-
+                entityInstCounter=0;
+                //modelInstances = new HashMap<>();
+                spriteInstances = new HashMap<>();
+                sphereInstances = new HashMap<>();
+                boxInstances = new HashMap<>();
+                //this.mainThread.clearVars();
             }
         });
 
@@ -794,7 +854,8 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
     public void run(String code) {
 
-        mainThread = new SceneMaxThread();
+        this.initThreads();
+        mainThread = mainThread == null ? new SceneMaxThread() : mainThread;
         mainThread.mainController.adhereToPauseStatus=false; // main thread never pauses
 
         hasRunTimeError=false;
@@ -804,9 +865,13 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         // parse & compile the source code
         // in Android we parse the "using" command (parseUsingResource=true)
         // - to cache sounds & accelerate audio.play performance
-        SceneMaxLanguageParser.parseUsingResource=true;
-        final ProgramDef prg = new SceneMaxLanguageParser(null,
-                workingFolder).parse(code);
+        SceneMaxLanguageParser parser = new SceneMaxLanguageParser(null,
+                this.workingFolder + this.currentLevel);
+        if (this.prg != null) {
+            parser.setCurrentProgramState(this.prg);
+        }
+        final ProgramDef prg = parser.parse(code);
+
         if(prg==null){
             onEndCode();
             return;
@@ -1029,7 +1094,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         } else if(action instanceof ActionCommandMove) {
             for(ActionStatementBase moveAction: action.statements) {
                 ActionCommandMove cmd = (ActionCommandMove) moveAction;
-                MoveController mc = new MoveController(this,thread,cmd);
+                MoveController mc = new MoveController(this, prg, thread, cmd);
 
                 mc.targetVarDef = cmd.varDef;
                 mc.axis = cmd.axis;
@@ -1044,10 +1109,10 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         } else if(action instanceof ActionCommandAnimate) {
             ActionCommandAnimate cmdAnim = (ActionCommandAnimate)action;
 
-            AnimateCompositeController animateController = new AnimateCompositeController(cmdAnim);
+            AnimateCompositeController animateController = new AnimateCompositeController(cmdAnim, thread);
             for(ActionStatementBase animAction: action.statements) {
                 ActionCommandAnimate cmd = (ActionCommandAnimate) animAction;
-                ModelAnimateController anim = new ModelAnimateController(this,cmd,thread);
+                ModelAnimateController anim = new ModelAnimateController(this, prg, cmd,thread);
                 animateController.add(anim);
             }
 
@@ -1262,6 +1327,10 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             ForEachCommandController ctl = new ForEachCommandController(this,prg,thread,(ForEachCommand)action);
             ctl.async = action.isAsync;
             thread.add(ctl);
+        } else if (action instanceof ForCommand) {
+            ForController ctl = new ForController(this,prg,thread,(ForCommand)action);
+            ctl.async = action.isAsync;
+            thread.add(ctl);
         } else if (action instanceof KillEntityCommand) {
             KillEntityController ctl = new KillEntityController (this,prg,thread,(KillEntityCommand)action);
             ctl.async = action.isAsync;
@@ -1301,6 +1370,20 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         } else if (action instanceof HttpCommand) {
             HttpController ctl = new HttpController(this,prg,thread,(HttpCommand)action);
             ctl.async=true;
+            thread.add(ctl);
+        } else if(action instanceof CharacterIgnoreCommand) {
+            CharacterIgnoreController ctl = new CharacterIgnoreController(this,prg,thread,(CharacterIgnoreCommand)action);
+            thread.add(ctl);
+        } else if(action instanceof WhenStateCommand) {
+            WhenStateEventController ctl = new WhenStateEventController(this,prg,thread,(WhenStateCommand)action);
+            ctl.async = true;
+            thread.add(ctl);
+        } else if (action instanceof SwitchStateCommand) {
+            SwitchStateController ctl = new SwitchStateController(this,prg,thread,(SwitchStateCommand)action);
+            ctl.async = true;
+            thread.add(ctl);
+        } else if (action instanceof ArrayCommand) {
+            ArrayCommandController ctl = new ArrayCommandController(this,prg,thread,(ArrayCommand)action);
             thread.add(ctl);
         }
 
@@ -1361,7 +1444,6 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
     public int getEntityThreadId(SceneMaxThread thread, String targetVar) {
 
-
         int threadId=0;
         ModelInst mi = thread.getModel(targetVar);
         if(mi==null) {
@@ -1382,14 +1464,51 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
                 threadId=si.thread.threadId;
             }
 
-
         } else {
             threadId=mi.thread.threadId;
         }
 
         return threadId;
 
+    }
 
+    public ModelInst instantiate3DModelAsync(ProgramDef prg, VariableDef var,SceneMaxThread thread) {
+
+        String fromRes = "";
+        ModelDef md = null;
+
+        if (var.resName != null) {
+            md = prg.getModel(var.resName);
+            fromRes = var.resName;
+        } else {
+            fromRes = new ActionLogicalExpression(var.resNameExpr, thread).evaluate().toString();
+
+            md = new ModelDef();
+            md.name = fromRes;
+            md.isVehicle = var.isVehicle;
+            prg.models.put(md.name, md);
+        }
+
+        if (md != null) {
+            ModelInst inst = new ModelInst(md, var, thread);
+            String key = var.varName + "_" + ++entityInstCounter;
+            inst.entityKey = key;
+            modelInstances.put(key, inst);
+
+            if (var.entityPos != null) {
+                inst.entityForPos = findVarRuntime(prg, thread, var.entityPos.entityName);
+            }
+
+            if (var.entityRot != null) {
+                inst.entityForRot = findVarRuntime(prg, thread, var.entityRot);
+            }
+
+            thread.models.put(var.varName, inst);
+            //loadModel(var.varName, fromRes, inst);
+            return inst;
+        }
+
+        return null;
     }
 
     public void instantiateVariable(ProgramDef prg, VariableDef var,SceneMaxThread thread) {
@@ -1465,10 +1584,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
             thread.boxes.put(var.varName,inst);
             loadBox(inst);
-            return;
         }
-
-        return;
 
     }
 
@@ -1803,47 +1919,39 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
     }
 
-    public int loadModel(final String name, String resourcePath, final ModelInst modelInst) {
+    public Spatial loadModelSpatial(final String name, String resourcePath, final ModelInst modelInst) {
 
         final ResourceSetup resource = assetsMapping.get3DModelsIndex().get(resourcePath.toLowerCase());
         if (resource == null) {
             this.handleRuntimeError("Error: line " + modelInst.varDef.varLineNum + ", resource '" + resourcePath + "' doesn't exist");
-            return -1;
+            return null;
         }
 
         if (modelInst.varDef.isVehicle) {
             SceneMax3DGenericVehicle v = loadVehicleModel(name, modelInst, resource);
             v.getNode().setShadowMode(RenderQueue.ShadowMode.Cast);
-            return 0;
+            return null;
         }
 
         Spatial mm = null;
         try {
-            if (resource.path.endsWith("gltf")) {
-                //GltfModelKey k = new GltfModelKey(resource.path);
-                //mm = assetManager.loadModel(k);
-                mm = assetManager.loadModel(resource.path);
-            } else {
-                mm = assetManager.loadModel(resource.path);
-            }
-        } catch(Exception e) {
+            mm = assetManager.loadModel(resource.path);
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
         if (mm == null) {
-            return -1;
+            return null;
         }
 
-        if(modelInst.varDef.shadowMode==3) {
+        if (modelInst.varDef.shadowMode == 3) {
             mm.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
-        } else if(modelInst.varDef.shadowMode==2) {
+        } else if (modelInst.varDef.shadowMode == 2) {
             mm.setShadowMode(RenderQueue.ShadowMode.Receive);
-        } else if(modelInst.varDef.shadowMode==1) {
+        } else if (modelInst.varDef.shadowMode == 1) {
             mm.setShadowMode(RenderQueue.ShadowMode.Cast);
         }
 
-
-        Quaternion entityLocalRotation = null;
         final Node parentNode = new Node();
         parentNode.attachChild(mm); // add it to the wrapper
 
@@ -1929,15 +2037,15 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             parentNode.setLocalTranslation(localTranslationX, localTranslationY, localTranslationZ);
         } else if (modelInst.entityForPos != null) {
 
-            if(modelInst.varDef.entityPos.entityJointName==null) {
+            if (modelInst.varDef.entityPos.entityJointName == null) {
                 Spatial sp = getEntitySpatial(modelInst.entityForPos.varName, modelInst.entityForPos.varDef.varType);
                 parentNode.setLocalTranslation(sp.getLocalTranslation());
             } else {
                 AppModel am2 = models.get(modelInst.entityForPos.varName);
-                if(am2!=null) {
+                if (am2 != null) {
                     Node n = am2.getJointAttachementNode(modelInst.varDef.entityPos.entityJointName);
 
-                    if(n!=null) {
+                    if (n != null) {
                         Joint j = (Joint) n.getUserData("AttachedBone");
                         Vector3f pos = j.getModelTransform().clone().combineWithParent(am2.getSkinningControl().getSpatial().getWorldTransform()).getTranslation();
                         parentNode.setLocalTranslation(pos);
@@ -2002,108 +2110,115 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
         }
 
+        ////////////////////  RIGID BODY CONTROL ////////////////////
+        CollisionShape modelShape = null;
 
-            ////////////////////  RIGID BODY CONTROL ////////////////////
-            CollisionShape modelShape = null;
-
-            if (modelInst.varDef.isStatic) {
-                am.isStatic = true;
-                parentNode.breadthFirstTraversal(visitor);
-            } else {
-                parentNode.breadthFirstTraversal(visitorSetName); // we need to give all sub geometries a name & map them
-                                                             // - we will use that for ray casting & other utilities
-                am.skinningControlNode = findSkinningControlNode(mm);
-                if (am.skinningControlNode == null) {
-                    am.skinningControlNode = mm;
-                }
-
-                if (modelInst.varDef.isDynamic) {
-                    DynamicAnimControl modelCtl = new DynamicAnimControl();
-                    LinkConfig defaultConfig = new LinkConfig();
-                    RangeOfMotion defaultRom = new RangeOfMotion(1f);
-
-                    if (modelInst.varDef.joints != null) {
-
-                        for (String s : modelInst.varDef.joints) {
-                            if (s.length() > 2) {
-                                s = s.substring(1, s.length() - 1);
-                                modelCtl.link(s.trim(), defaultConfig, defaultRom); // right shoulder
-                            }
-
-                        }
-                    }
-
-                    try {
-                        am.skinningControlNode.addControl(modelCtl);
-                        modelCtl.setPhysicsSpace(bulletAppState.getPhysicsSpace());
-                        ctls.add(modelCtl);// cache control
-
-                    } catch (IllegalArgumentException e) {
-                        showFloatingMessage("Problem adding Dynamic Animation Control To Model: " + name + "\r\n" + e.getMessage());
-                        return -1;
-                    }
-
-                } else {
-
-                    if(modelInst.varDef.collisionShape!=VariableDef.COLLISION_SHAPE_DEFAULT) {
-                        if(modelInst.varDef.collisionShape==VariableDef.COLLISION_SHAPE_BOX) {
-                            //modelShape = new BoxCollisionShape(((BoundingBox)parentNode.getWorldBound()).getExtent(new Vector3f()));
-                            modelShape = CollisionShapeFactory.createMergedBoxShape(parentNode);
-                        } else if (modelInst.varDef.collisionShape==VariableDef.COLLISION_SHAPE_BOXES) {
-                            modelShape = CollisionShapeFactory.createBoxShape(parentNode);
-                        }
-                    } else {
-                        modelShape = CollisionShapeFactory.createDynamicMeshShape(parentNode);
-                    }
-
-                    RigidBodyControl modelCtl = new RigidBodyControl(modelShape, mass);
-                    modelCtl.setKinematic(!isPhysical);
-                    parentNode.addControl(modelCtl);
-
-                    if(modelInst.varDef.calibration!=null) {
-
-                        float cx = ((Double) new ActionLogicalExpression(modelInst.varDef.calibration.posX,modelInst.thread).evaluate()).floatValue();
-                        float cy = ((Double) new ActionLogicalExpression(modelInst.varDef.calibration.posY,modelInst.thread).evaluate()).floatValue();
-                        float cz = ((Double) new ActionLogicalExpression(modelInst.varDef.calibration.posZ,modelInst.thread).evaluate()).floatValue();
-
-                        mm.move(cx,cy,cz);
-                    }
-
-                    if (isPhysical) {
-                        am.physicalControl = modelCtl;
-                    }
-
-                    bulletAppState.getPhysicsSpace().add(modelCtl);
-                    ctls.add(modelCtl);// cache control
-
-                    Vector3f pos = am.skinningControlNode.worldToLocal(modelCtl.getPhysicsLocation(), null);
-                    am.skinningControlNode.setLocalTranslation(pos);
-
-                }
-
+        if (modelInst.varDef.isStatic) {
+            am.isStatic = true;
+            parentNode.breadthFirstTraversal(visitor);
+        } else {
+            parentNode.breadthFirstTraversal(visitorSetName); // we need to give all sub geometries a name & map them
+            // - we will use that for ray casting & other utilities
+            am.skinningControlNode = findSkinningControlNode(mm);
+            if (am.skinningControlNode == null) {
+                am.skinningControlNode = mm;
             }
 
+            if (modelInst.varDef.isDynamic) {
+                DynamicAnimControl modelCtl = new DynamicAnimControl();
+                LinkConfig defaultConfig = new LinkConfig();
+                RangeOfMotion defaultRom = new RangeOfMotion(1f);
+
+                if (modelInst.varDef.joints != null) {
+
+                    for (String s : modelInst.varDef.joints) {
+                        if (s.length() > 2) {
+                            s = s.substring(1, s.length() - 1);
+                            modelCtl.link(s.trim(), defaultConfig, defaultRom); // right shoulder
+                        }
+
+                    }
+                }
+
+                try {
+                    am.skinningControlNode.addControl(modelCtl);
+                    modelCtl.setPhysicsSpace(bulletAppState.getPhysicsSpace());
+                    ctls.add(modelCtl);// cache control
+
+                } catch (IllegalArgumentException e) {
+                    showFloatingMessage("Problem adding Dynamic Animation Control To Model: " + name + "\r\n" + e.getMessage());
+                    return null;
+                }
+
+            } else {
+
+                if (modelInst.varDef.collisionShape != VariableDef.COLLISION_SHAPE_DEFAULT) {
+                    if (modelInst.varDef.collisionShape == VariableDef.COLLISION_SHAPE_BOX) {
+                        //modelShape = new BoxCollisionShape(((BoundingBox)parentNode.getWorldBound()).getExtent(new Vector3f()));
+                        modelShape = CollisionShapeFactory.createMergedBoxShape(parentNode);
+                    } else if (modelInst.varDef.collisionShape == VariableDef.COLLISION_SHAPE_BOXES) {
+                        modelShape = CollisionShapeFactory.createBoxShape(parentNode);
+                    }
+                } else {
+                    modelShape = CollisionShapeFactory.createDynamicMeshShape(parentNode);
+                }
+
+                RigidBodyControl modelCtl = new RigidBodyControl(modelShape, mass);
+                modelCtl.setKinematic(!isPhysical);
+                parentNode.addControl(modelCtl);
+
+                if (modelInst.varDef.calibration != null) {
+
+                    float cx = ((Double) new ActionLogicalExpression(modelInst.varDef.calibration.posX, modelInst.thread).evaluate()).floatValue();
+                    float cy = ((Double) new ActionLogicalExpression(modelInst.varDef.calibration.posY, modelInst.thread).evaluate()).floatValue();
+                    float cz = ((Double) new ActionLogicalExpression(modelInst.varDef.calibration.posZ, modelInst.thread).evaluate()).floatValue();
+
+                    mm.move(cx, cy, cz);
+                }
+
+                if (isPhysical) {
+                    am.physicalControl = modelCtl;
+                }
+
+                bulletAppState.getPhysicsSpace().add(modelCtl);
+                ctls.add(modelCtl);// cache control
+
+                Vector3f pos = am.skinningControlNode.worldToLocal(modelCtl.getPhysicsLocation(), null);
+                am.skinningControlNode.setLocalTranslation(pos);
+
+            }
+        }
 
         String geoKey = modelName + "~" + parentNode.getName();
         parentNode.setUserData("key", geoKey);
         geoName2ModelName.put(geoKey, modelName);
         geoName2EntityInst.put(geoKey, modelInst);
 
-        if(modelInst.varDef.visible) {
+        if (modelInst.varDef.visible) {
             rootNode.attachChild(parentNode);
         }
 
-        return 0;
+        return parentNode;
     }
 
+    public int attachModelSpatial(Spatial model, final ModelInst inst) {
+        if (model!=null) {
+            if (inst.varDef.visible) {
+                rootNode.attachChild(model);
+            }
 
+            return 0;
+        }
 
-//});
-//
-//
-//        return 0;
-//
-//    }
+        return -1;
+    }
+
+    public int loadModel(final String name, String resourcePath, final ModelInst modelInst) {
+
+        Spatial parentNode = this.loadModelSpatial(name, resourcePath, modelInst);
+        return this.attachModelSpatial(parentNode, modelInst);
+
+    }
 
     private Spatial findSkinningControlNode(Spatial sp) {
 
@@ -2201,10 +2316,16 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             cols=resource.cols;
         }
 
-        SpriteEmitter sprite = new SpriteEmitter(name,rows,cols,assetManager, assetManager.loadTexture(resource.path));
+        float width = 1.0f, height = 1.0f;
+        if (spriteInst.spriteDef.widthExpr!=null) {
+            width = ((Double)new ActionLogicalExpression(spriteInst.spriteDef.widthExpr,spriteInst.thread).evaluate()).floatValue();
+            height = ((Double)new ActionLogicalExpression(spriteInst.spriteDef.heightExpr,spriteInst.thread).evaluate()).floatValue();
+        }
+        SpriteEmitter sprite = new SpriteEmitter(
+                name,rows,cols,width,height,
+                assetManager, assetManager.loadTexture(resource.path));
         sprite.entityInst=spriteInst;
-
-        sprite.getGeometry().setName(name);
+        sprite.getSpatial().setName(name);
         sprites.put(name,sprite);
         geoName2ModelName.put(name,name);
         geoName2EntityInst.put(name,spriteInst);
@@ -2213,11 +2334,11 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             float localTranslationX = Float.parseFloat(spriteInst.xExpr.evaluate().toString());
             float localTranslationY = Float.parseFloat(spriteInst.yExpr.evaluate().toString());
             float localTranslationZ = Float.parseFloat(spriteInst.zExpr.evaluate().toString());
-            sprite.getGeometry().setLocalTranslation(localTranslationX, localTranslationY, localTranslationZ);
+            sprite.getSpatial().setLocalTranslation(localTranslationX, localTranslationY, localTranslationZ);
         } else if(spriteInst.entityForPos!=null) {
             if(spriteInst.varDef.entityPos.entityJointName==null) {
                 Spatial sp = getEntitySpatial(spriteInst.entityForPos.varName,spriteInst.entityForPos.varDef.varType);
-                sprite.getGeometry().setLocalTranslation(sp.getLocalTranslation());
+                sprite.getSpatial().setLocalTranslation(sp.getLocalTranslation());
             } else {
                 AppModel am2 = models.get(spriteInst.entityForPos.varName);
                 if(am2!=null) {
@@ -2225,50 +2346,54 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
                     if(n!=null) {
                         Joint j = (Joint)n.getUserData("AttachedBone");
                         Vector3f pos = j.getModelTransform().clone().combineWithParent(am2.getSkinningControl().getSpatial().getWorldTransform()).getTranslation();
-                        sprite.getGeometry().setLocalTranslation(pos);
+                        sprite.getSpatial().setLocalTranslation(pos);
                     }
                 }
 
             }
 
         } else {
-            sprite.getGeometry().setLocalTranslation(resource.localTranslationX, resource.localTranslationY, resource.localTranslationZ);
+            sprite.getSpatial().setLocalTranslation(resource.localTranslationX, resource.localTranslationY, resource.localTranslationZ);
         }
 
         if(spriteInst.spriteDef.scaleExpr!=null) {
             Double val = (Double)new ActionLogicalExpression(spriteInst.spriteDef.scaleExpr,spriteInst.thread).evaluate();
-            sprite.getGeometry().setLocalScale(val.floatValue());
+            sprite.getSpatial().setLocalScale(val.floatValue());
         }
-
-        CollisionShape modelShape =
-                CollisionShapeFactory.createBoxShape(sprite.getGeometry());
-
-        RigidBodyControl modelCtl = new RigidBodyControl(modelShape,1);
-        modelCtl.setKinematic(true);
-
-        sprite.getGeometry().addControl(modelCtl);
 
         if(spriteInst.spriteDef.isBillboard) {
             BillboardControl control=new BillboardControl();
-            sprite.getGeometry().addControl(control);
+            sprite.getSpatial().addControl(control);
         }
 
-        bulletAppState.getPhysicsSpace().add(modelCtl);
+        if (spriteInst.spriteDef.hasCollisionShape) {
+            CollisionShape modelShape =
+                    CollisionShapeFactory.createBoxShape(sprite.getSpatial());
+            RigidBodyControl modelCtl = new RigidBodyControl(modelShape, 1);
+            modelCtl.setKinematic(true);
+            sprite.getSpatial().addControl(modelCtl);
+            bulletAppState.getPhysicsSpace().add(modelCtl);
+            List<java.lang.Object> ctls = new ArrayList<>();
+            ctls.add(modelCtl);
+            collisionControlsCache.put(name, ctls);
+        }
 
-        List<Object> ctls = new ArrayList<>();
-        ctls.add(modelCtl);
-        collisionControlsCache.put(name,ctls);
-        rootNode.attachChild(sprite.getGeometry());
+        if (spriteInst.spriteDef.visible) {
+            sprite.attachTo(rootNode);
+            //rootNode.attachChild(sprite.getSpatial());
+        }
 
         return 0;
     }
-
 
     public int registerController(SceneMaxBaseController c) {
 
         c.setUIProxy(this);
         c.init();
         _controllers.add(c);
+        if(c.isEventHandler) {
+            this.eventHandlersCount++;
+        }
         return 0;
     }
 
@@ -2341,15 +2466,14 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         if(se!=null) {
 
             if(show.axisX || show.axisY || show.axisZ) {
-                attachCoordinateAxes(se.getGeometry().getWorldTranslation(),show,rootNode);
+                attachCoordinateAxes(se.getSpatial().getWorldTranslation(),show,rootNode);
                 return;
             }
 
             if(!show.show) {
-                se.getGeometry().removeFromParent();
-                //rootNode.detachChild(se.getGeometry());
+                se.hide();
             }else {
-                rootNode.attachChild(se.getGeometry());
+                se.show(rootNode);
             }
         }
     }
@@ -2393,7 +2517,6 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
                 String msg = prepareFloatingMessage(rows);
                 showFloatingMessage(msg, "OK", 10);
                 if(show.infoDumpFile!=null) {
-
                     Util.writeFile(show.infoDumpFile,msg);
                 }
 
@@ -2539,15 +2662,15 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
     }
 
     private void removeCollisionControlsFromPhysics(String varName) {
-        List<Object> ctls = collisionControlsCache.get(varName);
-        removeCollisionControlsFromPhysics(ctls);
+        List<java.lang.Object> ctls = collisionControlsCache.get(varName);
+        if (ctls!=null) {
+            removeCollisionControlsFromPhysics(ctls);
+        }
     }
 
     private void removeCollisionControlsFromPhysics(List<Object> ctls) {
         for(Object ctl:ctls){
-            if(bulletAppState.getPhysicsSpace().getRigidBodyList().contains(ctl)) {
-                bulletAppState.getPhysicsSpace().remove(ctl);
-            }
+            bulletAppState.getPhysicsSpace().remove(ctl);
         }
     }
 
@@ -2625,7 +2748,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
     @Override
     public void moveSprite(String targetVar, int axisNum, float direction, float moveVal) {
-        Geometry m = sprites.get(targetVar).getGeometry();
+        Spatial m = sprites.get(targetVar).getSpatial();
         if(m==null) {
             return;
         }
@@ -2637,7 +2760,6 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         } else if(axisNum==3) {
             m.move(0, 0, moveVal * direction);
         }
-
 
     }
 
@@ -2743,11 +2865,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             return;
         }
 
-
-
         if(am.isStatic) {
-
-
             List<Object> ctls = collisionControlsCache.get(am.model.getName());
             if (ctls != null) {
 
@@ -2861,6 +2979,9 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
     }
 
+    public HashMap<String, AppModel> getModels() {
+        return models;
+    }
 
     public void animateModel(String targetVar, String animationName, String speed, AppModelAnimationController controller) {
 
@@ -2932,7 +3053,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             return;
         }
 
-        if(_controllers.size()==0) {
+        if(_controllers.size()==this.eventHandlersCount) {
             return;
         }
 
@@ -2950,9 +3071,15 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
             boolean finished = ctl.run(tpf);
             if(finished) {
+                if (this.switchStateCode != null) {
+                    break; // step out from controllers execution. they are about to be switched
+                }
                 ctl.isRunning=false;
                 //ctl.dispose();
                 _controllers.remove(i);
+                if(ctl.isEventHandler) {
+                    this.eventHandlersCount--;
+                }
             }
 
             if(_controllers.size()==0) {
@@ -2963,6 +3090,10 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
         if(followCameraState!=null) {
             followCameraState.update(tpf);
+        }
+
+        if (this.switchStateCode != null) {
+            this.switchState();
         }
 
     }
@@ -2994,7 +3125,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         }
 
         if(sprites.containsKey(varName)) {
-            Geometry g = sprites.get(varName).getGeometry();
+            Spatial g = sprites.get(varName).getSpatial();
             if(g!=null) {
                 return g.getUserData(fieldName);
             }
@@ -3115,7 +3246,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         }
 
         if(sprites.containsKey(varName)) {
-            Geometry g = sprites.get(varName).getGeometry();
+            Spatial g = sprites.get(varName).getSpatial();
             return getGeometryFieldValue(g,fieldName);
 
         }
@@ -3181,7 +3312,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         return 0f;
     }
 
-    private Object getGeometryFieldValue(Geometry g, String fieldName) {
+    private Object getGeometryFieldValue(Spatial g, String fieldName) {
         if(fieldName.equals("x")) {
             return g.getWorldTranslation().x;
         }
@@ -3224,23 +3355,21 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             getRootNode().attachChild(skybox);
         }
 
-//        SkyBoxMaterial m = skyboxMaterials.get(skyboxMaterial);
-//        if(m!=null) {
-//            if(m.westRes!=null) {
-//                getRootNode().attachChild(SkyFactory.createSky(getAssetManager(),
-//                        assetManager.loadTexture(m.westRes),
-//                        assetManager.loadTexture(m.eastRes),
-//                        assetManager.loadTexture(m.northRes),
-//                        assetManager.loadTexture(m.southRes),
-//                        assetManager.loadTexture(m.upRes),
-//                        assetManager.loadTexture(m.downRes)));
-//            } else if(m.ddsRes!=null) {
-//                getRootNode().attachChild(SkyFactory.createSky(getAssetManager(),
-//                        m.ddsRes,
-//                        SkyFactory.EnvMapType.EquirectMap) );
-//            }
-//        }
+    }
 
+    public boolean checkCollision(EntityInstBase obj1, EntityInstBase obj2) {
+        String var1 = obj1.getVarRunTimeName();
+        String var2 = obj2.getVarRunTimeName();
+
+        Spatial s1 = getEntitySpatial(var1, obj1.varDef.varType);
+        Spatial s2 = getEntitySpatial(var2, obj2.varDef.varType);
+        if (s1 == null || s2 == null) {
+            return false; // todo: throw exception
+        }
+        CollisionResults results = new CollisionResults();
+        s1.collideWith(s2.getWorldBound(), results);
+
+        return results.size() > 0;
     }
 
     public boolean checkCollision(String var1, String var2, String jointNameA, String jointNameB) {
@@ -3313,17 +3442,21 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         @Override
         public void onAction(String name, boolean keyPressed, float tpf) {
 
+            UserInputDoBlockController c = null;
             if(keyPressed) {
-                UserInputDoBlockController c = inputHandlers.get(name);
-                if (c != null && !c.isRunning && c.checkTargetEntityClicked() && c.checkGoExpr()) {
-                    registerController(c);// run on its own thread
-                    c.isRunning = true;
+                c = inputHandlers.get(name);
+            } else {
+                c = releaseInputHandlers.get(name);
+            }
 
-                }
+            if (c != null && !c.isRunning && c.checkTargetEntityClicked() && c.checkGoExpr()) {
+                registerController(c);// run on its own thread
+                c.isRunning = true;
             }
 
         }
     };
+
 
     public void addInputHandler(InputStatementCommand cmd, UserInputDoBlockController c) {
 
@@ -3332,29 +3465,30 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             key+="_"+c.targetVar;
         }
 
-        if(!inputHandlers.containsKey(key)) {
-
+        if (!inputManager.hasMapping(key)) {
             if(cmd.inputType.equals("mouse")) {
                 inputManager.addMapping(key, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
-
                 if(cmd.targetVar!=null) { // draw channel
                     PictureExt pic = _drawChannels.get(cmd.targetVar);
                     if(pic!=null) {
                         c.targetPicture = pic;
                     }
-
                 }
             } else {
                 inputManager.addMapping(key, new KeyTrigger(keyMapping.get(cmd.inputKey)));
             }
 
-            if(cmd.once) {
-                inputManager.addListener(actionListener, key);
-                c.execOnce=true;
-            } else {
-                inputManager.addListener(actionListenerAnalog, key);
-            }
+        }
 
+        if(cmd.once) {
+            inputManager.addListener(actionListener, key);
+        } else {
+            inputManager.addListener(actionListenerAnalog, key);
+        }
+
+        if (cmd.released) {
+            releaseInputHandlers.put(key, c);
+        } else {
             inputHandlers.put(key, c);
         }
 
@@ -3503,7 +3637,12 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
     public void posSprite(String targetVar, Double valX, Double valY, Double valZ, RunTimeVarDef varForPos, Vector3f calculatedPosition) {
 
-        Geometry m = sprites.get(targetVar).getGeometry();
+        SpriteEmitter se = sprites.get(targetVar);
+        if (se==null) {
+            this.showFloatingMessage("[posSprite] Run-time error: Sprite '"+targetVar+"' not found");
+            return;
+        }
+        Spatial m = se.getSpatial();
         if(m==null) {
             return;
         }
@@ -3518,6 +3657,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         }
 
     }
+
 
     public void posCamera(Double valX, Double valY, Double valZ, RunTimeVarDef varForPos, Vector3f calculatedPosition) {
 
@@ -4198,11 +4338,19 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         }
 
         if(sprites.containsKey(varName)) {
-            return sprites.get(varName).getGeometry();
+            return sprites.get(varName).getSpatial();
         }
 
         return null;
 
+    }
+
+    public ISceneMax3dObjectWrapper getEntityWrapper(String targetVar, int varType) {
+        if(varType==VariableDef.VAR_TYPE_2D) {
+            return sprites.get(targetVar);
+        }
+
+        return null;
     }
 
     public Spatial getEntitySpatial(String targetVar, int varType) {
@@ -4219,7 +4367,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         } else if(varType==VariableDef.VAR_TYPE_2D) {
             SpriteEmitter sp = sprites.get(targetVar);
             if(sp==null) return null;
-            m=sp.getGeometry();
+            m=sp.getSpatial();
         } else if(varType==VariableDef.VAR_TYPE_SPHERE) {
             m=spheres.get(targetVar);
         } else if(varType==VariableDef.VAR_TYPE_BOX) {
@@ -4249,7 +4397,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         } else if(varType==VariableDef.VAR_TYPE_2D) {
             SpriteEmitter sp = sprites.get(targetVar);
             if(sp==null) return;
-            m=sp.getGeometry();
+            m=sp.getSpatial();
         } else if(varType==VariableDef.VAR_TYPE_SPHERE) {
             m=spheres.get(targetVar);
         } else if(varType==VariableDef.VAR_TYPE_BOX) {
@@ -4364,7 +4512,6 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
     public SceneMax3DGenericVehicle switchModelToCarMode2(ResourceSetup res, Vector3f initLocation, Quaternion initRotate) {
 
         SceneMax3DGenericVehicle vehicle = new SceneMax3DGenericVehicle(res);
-
         VehicleWorld w = new DefaultVehicleWorld(this, this.getRootNode());
 
         vehicle.addToWorld(w, () -> {
@@ -4379,17 +4526,12 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             vehicle.getVehicleControl().setPhysicsRotation(initRotate);
         }
 
-
         // add some controls
         BasicVehicleInputState basicVehicleInputState = new BasicVehicleInputState(vehicle);
         getStateManager().attach(basicVehicleInputState);
         this.setVirtualInputObserver(basicVehicleInputState);
         vehicle.startEngine();
 
-
-
-//        stateManager.attach(new SpeedometerState(vehicle, SpeedUnit.KPH));
-//        stateManager.attach(new TachometerState(vehicle.getEngine()));
         return vehicle;
     }
 
@@ -4656,6 +4798,8 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
     public void setDebugMode(boolean debugOn) {
         bulletAppState.setDebugEnabled(debugOn);
+        this.setDisplayFps(debugOn);
+        this.setDisplayStatView(debugOn);
     }
 
     public void setChaseCameraOff() {
@@ -4683,8 +4827,8 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             return;
         }
 
-        setGeometryUserData(se.getGeometry(), fieldName,data);
-        //se.getGeometry().setUserData(fieldName,data);
+        setGeometryUserData(se.getSpatial(), fieldName,data);
+
     }
 
     public void setBoxUserData(String targetVar, String fieldName, Object data) {
@@ -4733,7 +4877,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         } else if(varType==VariableDef.VAR_TYPE_2D) {
             SpriteEmitter se = sprites.get(targetVar);
             if(se!=null) {
-                child = se.getGeometry();
+                child = se.getSpatial();
             }
         } else if(varType==VariableDef.VAR_TYPE_BOX) {
             child = boxes.get(targetVar);
@@ -4808,10 +4952,15 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
     }
 
     private Spatial findParentEntity(Spatial sp) {
-        if(sp.getParent()==rootNode) {
+        Node parent = sp.getParent();
+        if (parent==null) {
+            return null;
+        }
+
+        if(parent==rootNode) {
             return sp;
         } else {
-            return findParentEntity(sp.getParent());
+            return findParentEntity(parent);
         }
     }
 
@@ -4878,6 +5027,9 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
         String varInstName = "";
         VariableDef varInstDef=null;
+        if (varName.equals("camera")) {
+            return this.cameraRuntimeVarDef;
+        }
         if(prg==null) {
             prg=this.prg;
         }
@@ -5024,6 +5176,76 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         this.scenePaused=false;
     }
 
+    public void attachEntity2(RunTimeVarDef attachedEntity, String attachedEntityJointName,
+                              RunTimeVarDef attachToEntity, String attachToEntityJointName,
+                              Double xPos, Double yPos, Double zPos) {
+
+        Spatial attachToSpatial = getEntitySpatial(attachToEntity.varName,attachToEntity.varDef.varType);
+        if(attachToSpatial==null) {
+            return;// error not found
+        }
+
+        ISceneMax3dObjectWrapper wrapper = getEntityWrapper(attachedEntity.varName,attachedEntity.varDef.varType);
+        Spatial attachedSpatial = wrapper != null ? wrapper.getSpatial() : getEntitySpatial(attachedEntity.varName,attachedEntity.varDef.varType);
+        if(attachedSpatial==null){
+            return;// error not found
+        }
+
+        Node attachedNode = (Node)attachedSpatial;
+        if(attachedEntityJointName!=null && attachedEntity.varDef.varType==VariableDef.VAR_TYPE_3D) {
+            attachedNode = getAttachJointNode(attachedEntity, attachedEntityJointName);
+        }
+
+        Node attachToNode = (Node)attachToSpatial;
+        if(attachToEntityJointName!=null && attachToEntity.varDef.varType==VariableDef.VAR_TYPE_3D) {
+            attachToNode = getAttachJointNode(attachToEntity, attachToEntityJointName);
+        }
+
+        Node scaleNode = new Node(); // we need this node to preserve scaling of the attached spatial
+        if (wrapper!=null) {
+            wrapper.attachTo(scaleNode);
+        } else {
+            scaleNode.attachChild(attachedNode);
+        }
+
+        float ratio = 1.0f/attachToNode.getWorldScale().getX();
+        scaleNode.setLocalScale(ratio);
+
+        attachToNode.attachChild(scaleNode);
+        Spatial attachToParentNode = findParentEntity(attachToNode);
+
+        if (attachToParentNode!=null) {
+            // character control should ignore the attached object
+            CharacterControl ctl = attachToParentNode.getControl(CharacterControl.class);
+            if (ctl != null) {
+                SceneGraphVisitor visitor = new SceneGraphVisitor() {
+                    @Override
+                    public void visit(Spatial sp) {
+                        RigidBodyControl rctl = sp.getControl(RigidBodyControl.class);
+                        if (rctl != null) {
+                            ctl.getCharacter().addToIgnoreList(rctl);
+                        }
+                    }
+                };
+
+                attachedSpatial.breadthFirstTraversal(visitor);
+            }
+        }
+
+        attachedNode.setLocalTranslation(xPos.floatValue(),yPos.floatValue(),zPos.floatValue());
+
+    }
+
+    private Node getAttachJointNode(RunTimeVarDef entityVarDef, String jointName) {
+        AppModel model = models.get(entityVarDef.varName);
+        try {
+            return model.getJointAttachementNode(jointName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public void attachEntity(RunTimeVarDef targetEntity, RunTimeVarDef entityToAttach, String targetJointName, Double xPos, Double yPos, Double zPos) {
 
         Spatial target = getEntitySpatial(targetEntity.varName,targetEntity.varDef.varType);
@@ -5162,7 +5384,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
     }
 
     public void moveSpriteToDirection(String targetVar, int verbalCommand, float val) {
-        Geometry m = sprites.get(targetVar).getGeometry();
+        Spatial m = sprites.get(targetVar).getSpatial();
         if(m==null) {
             return;
         }
@@ -5442,13 +5664,9 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
     }
 
-//    public void setCSharpRegister(String targetRegister, java.lang.Object val) {
-//        csharpRegisters.put(targetRegister, val);
-//    }
-
-//    public java.lang.Object getCSharpRegisterValue(String registerName) {
-//        return  csharpRegisters.get(registerName);
-//    }
+    public String getWorkingFolder() {
+        return this.workingFolder;
+    }
 
     public Object calcAngle(String obj1, String obj2) {
 
@@ -5465,10 +5683,6 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
         Vector2f vv2 = new Vector2f(v2.x,v2.z);
         float ang = FastMath.RAD_TO_DEG * vv1.angleBetween(vv2);
         return ang;
-
-        //float ang = FastMath.RAD_TO_DEG * v1.normalize().angleBetween(v2.normalize());
-
-        //return ang;
     }
 
     public Object calcDistance(String obj1, String obj2) {
@@ -5683,7 +5897,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             probe.setPosition(pos);
             probeHolder.removeLight(probe);
 
-            float r = probe.getArea().getRadius();
+            //float r = probe.getArea().getRadius();
             probe.getArea().setRadius(800f);
 
             rootNode.addLight(probe);
@@ -5812,7 +6026,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             return;
         }
 
-        Geometry g = se.getGeometry();
+        Spatial g = se.getSpatial();
         if(g.getParent()!=null && g.getParent()!=rootNode) {
 
             Vector3f pos = rootNode.worldToLocal(g.getWorldTranslation(),null);
@@ -6080,15 +6294,37 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
 
     }
 
+    private void clearSpatialGeometries(String varName, Spatial root) {
+        SceneGraphVisitor visitorRemoveGeo = spatial -> {
+            if (spatial instanceof Geometry) {
+                Geometry geometry = (Geometry) spatial;
+                String geoKey = varName + "~" + geometry.getName();
+                geoName2ModelName.remove(geoKey);
+                geoName2EntityInst.remove(geoKey);
+
+            }
+        };
+        visitorRemoveGeo.visit(root);
+
+    }
+
     public void killModel(String varName) {
 
         AppModel am = models.get(varName);
-        if(am!=null) {
+        if (am!=null) {
+            if (am.skinningControlNode != null) {
+                DynamicAnimControl ac = am.skinningControlNode.getControl(DynamicAnimControl.class);
+                if (ac !=null) {
+                    ac.setPhysicsSpace(null);
+                }
+            }
             removeOutlineFilter(am.model);
             am.model.removeFromParent();
             removeCollisionControlsFromPhysics(varName);
+            collisionControlsCache.remove(varName); // this shouldn't be in removeCollisionControlsFromPhysics()
             models.remove(varName);
             modelInstances.remove(am.entityInst.entityKey);
+            clearSpatialGeometries(varName, am.model);
         }
 
     }
@@ -6096,7 +6332,7 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
     public void killSprite(String varName) {
         SpriteEmitter se = sprites.get(varName);
         if(se!=null) {
-            se.getGeometry().removeFromParent();
+            se.getSpatial().removeFromParent();
             removeCollisionControlsFromPhysics(varName);
             sprites.remove(varName);
             spriteInstances.remove(se.entityInst.entityKey);
@@ -6112,6 +6348,8 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             EntityInstBase inst = geoName2EntityInst.get(varName);
             boxInstances.remove(inst.entityKey);
             removeCollisionControlsFromPhysics(varName);
+            collisionControlsCache.remove(varName);
+            clearSpatialGeometries(varName, g);
         }
     }
 
@@ -6124,6 +6362,8 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
             EntityInstBase inst = geoName2EntityInst.get(varName);
             sphereInstances.remove(inst.entityKey);
             removeCollisionControlsFromPhysics(varName);
+            collisionControlsCache.remove(varName);
+            clearSpatialGeometries(varName, g);
         }
     }
 
@@ -6368,6 +6608,93 @@ public class SceneMaxApp extends com.jme3.app.SimpleApplication implements IUiPr
     }
 
     ////////////////////////////////////////////////////////////////
+    public void ignoreJoints(String targetVar, RunTimeVarDef ignoreVarDef) {
+
+        Node model;
+        AppModel am = models.get(targetVar);
+        if (am == null) {
+            return;
+        }
+
+        model = am.model;
+        if (model == null) {
+            return;
+        }
+
+        if (am.physicalControl instanceof CharacterControl) {
+            CharacterControl ctl = (CharacterControl) am.physicalControl;
+            DynamicAnimControl dctl = this.getDynamicAnimControl(ignoreVarDef);
+            if(dctl!=null) {
+                int normalGroup = PhysicsCollisionObject.COLLISION_GROUP_01;
+                int bccGroup = PhysicsCollisionObject.COLLISION_GROUP_02;
+                int dacGroup = PhysicsCollisionObject.COLLISION_GROUP_03;
+                ctl.getCharacter().setCollisionGroup(bccGroup);
+                ctl.getCharacter().setCollideWithGroups(normalGroup | bccGroup);
+                PhysicsRigidBody[] rbs = dctl.listRigidBodies();
+                for (int i = 0; i < rbs.length; ++i) {
+                    rbs[i].setCollisionGroup(dacGroup);
+                }
+
+            }
+
+        }
+
+    }
+
+    private DynamicAnimControl getDynamicAnimControl(RunTimeVarDef vardef) {
+
+        Node model;
+        AppModel am = models.get(vardef.varName);
+        if (am == null) {
+            return null;
+        }
+
+        model = am.model;
+        if (model == null) {
+            return null;
+        }
+
+        DynamicAnimControl dctl = am.skinningControlNode.getControl(DynamicAnimControl.class);
+
+        return dctl;
+    }
+
+    public void prepareToSwitchState(String code, String level) {
+        this.currentLevel = level;
+        this.switchStateCode = code;
+    }
+
+    public void switchState() {
+        this.turnOffCameraStates();
+        this.chaseCam = null; // force re-creating it next time it will be required
+        this.detachState(SkidMarksState.class);
+        this.detachState(BasicVehicleInputState.class);
+        this.detachState(MiniMapState.class);
+        this.miniMapState = null;
+        this.detachState(ChunkManager.class);
+
+        this.clearScene();
+        this.mainThread.reset();
+
+        bulletAppState.getPhysicsSpace().removeCollisionListener(this.collisionListener);
+        collisionListener.setEnabled(false);
+        collisionListener = null;
+        this.detachState(BulletAppState.class);
+        bulletAppState = null;
+        this.initBulletAppState();
+        this.getStateManager().attach(new ChunkManager());
+        this.eventHandlersCount = 0;
+
+        this.run(this.switchStateCode);
+        this.switchStateCode = null;
+    }
+
+    private <T extends AppState> void detachState(Class<T> stateClass) {
+        AppState state = this.getStateManager().getState(stateClass);
+        if (state != null) {
+            this.getStateManager().detach(state);
+        }
+    }
 
 
 }

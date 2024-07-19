@@ -6,15 +6,11 @@ import com.scenemaxeng.compiler.SwitchModeCommand;
 
 public class SwitchModeController extends SceneMaxBaseController {
 
-
     private boolean targetCalculated = false;
-
 
     public SwitchModeController(SceneMaxApp app, ProgramDef prg, SceneMaxThread thread, ActionStatementBase cmd) {
         super(app, prg, thread, cmd);
-
     }
-
 
     public boolean run(float tpf) {
         if (forceStop) return true;

@@ -2,11 +2,7 @@ package com.scenemaxeng.projector;
 
 
 import com.abware.scenemaxlang.parser.SceneMaxParser;
-import com.scenemaxeng.compiler.ActionStatementBase;
-import com.scenemaxeng.compiler.DoBlockCommand;
-import com.scenemaxeng.compiler.FunctionBlockDef;
-import com.scenemaxeng.compiler.StatementDef;
-import com.scenemaxeng.compiler.VariableDef;
+import com.scenemaxeng.compiler.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,8 +15,6 @@ public class DoBlockController extends SceneMaxBaseController {
 
     public SceneMaxParser.Logical_expressionContext goExpr;
     private DoBlockCommand cmd = null;
-    //public SceneMaxApp app = null;
-
     private ArrayList<SceneMaxBaseController> _controllers = new ArrayList<>();
     private SceneMaxThread thread = null;
     private double count = 0;
@@ -30,11 +24,10 @@ public class DoBlockController extends SceneMaxBaseController {
     private List<SceneMaxParser.Logical_expressionContext> paramsExp;
     public ActionLogicalExpression intervalExpr;
     private Double interval=-1.0;
-    //private double timerIntervalTarget = 0;
     private double timerIntervalCount=0;
     private boolean timerTicked;
-    public int type = 0;
     private boolean checkGoExpr = true;
+    private int eventHandlersCount;
 
 
     public DoBlockController(SceneMaxApp app, SceneMaxThread thread, DoBlockCommand cmd) {
@@ -45,6 +38,9 @@ public class DoBlockController extends SceneMaxBaseController {
         this.adhereToPauseStatus=false; // do block works even when the scene is paused
     }
 
+    public void reset() {
+        this.thread = null;
+    }
 
     @Override
     public void init() {
@@ -63,6 +59,7 @@ public class DoBlockController extends SceneMaxBaseController {
         }
 
         boolean goCondition=true;
+        boolean loopCondition = false;
 
         if(this.interval==-1 && this.intervalExpr!=null) {
             Object interval = this.intervalExpr.evaluate();
@@ -72,7 +69,7 @@ public class DoBlockController extends SceneMaxBaseController {
         }
 
         if(checkGoExpr && goExpr!=null) {
-            checkGoExpr=false;
+            checkGoExpr=this.cmd.useGoExprEveryIteration;
             Object cond = new ActionLogicalExpression(goExpr,parentThread).evaluate();
             if(cond instanceof Boolean) {
                 goCondition=(Boolean)cond;
@@ -102,7 +99,9 @@ public class DoBlockController extends SceneMaxBaseController {
             thread.funcScopeParams=this.funcScopeParams;
             thread.parent=parentThread;
 
-            thread.sequenceCreatorThread=cmd.creatorThread;
+            if(cmd.creatorThread!=null) {
+                thread.sequenceCreatorThread = (SceneMaxThread)cmd.creatorThread;
+            }
 
             if(this.interval!=-1) {
                 thread.isReturnPoint=true;
@@ -139,7 +138,6 @@ public class DoBlockController extends SceneMaxBaseController {
 
         //////////////  RUN //////////////
         boolean loopFinished = _controllers.size()==0;
-
         for(int i=_controllers.size()-1;i>=0;--i) {
 
             SceneMaxBaseController ctl =  _controllers.get(i);
@@ -159,6 +157,10 @@ public class DoBlockController extends SceneMaxBaseController {
 
             if(_controllers.size()==0) {
                 count++;
+
+                if (this.cmd.loopExpr!=null) {
+                    loopCondition = (Boolean) new ActionLogicalExpression(this.cmd.loopExpr, this.thread).evaluate();
+                }
 
                 if(this.interval==-1) {
                     thread=null; // trigger re-run all actions
@@ -196,15 +198,18 @@ public class DoBlockController extends SceneMaxBaseController {
             return false; // since we have a timer, we cannot end the controller even if the loop is finished
         }
 
-        return loopFinished;
+        return loopFinished && !loopCondition;
     }
 
     private int registerController(SceneMaxBaseController c) {
 
         c.setUIProxy(this.app); // this probably should be changed -
-                                //  - we need to have LoopBlockController to implement its own IUiProxy
+        //  - we need to have LoopBlockController to implement its own IUiProxy
         c.init();
         _controllers.add(c);
+        if(c.isEventHandler) {
+            this.eventHandlersCount++;
+        }
         return 0;
     }
 
@@ -224,7 +229,7 @@ public class DoBlockController extends SceneMaxBaseController {
         this.funcScopeParams.put(paramsNames.get(0), param);
     }
 
-        private void evalFunctionScopeParams() {
+    private void evalFunctionScopeParams() {
         if(paramsNames!=null && paramsNames.size()>0) {
             funcScopeParams=new HashMap<>();
             int index = 0;

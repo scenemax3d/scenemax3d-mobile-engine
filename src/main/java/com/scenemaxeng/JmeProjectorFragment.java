@@ -3,7 +3,7 @@ package com.scenemaxeng;
 import android.os.Environment;
 
 import com.jme3.app.AndroidHarnessFragment;
-import com.scenemaxeng.projector.AssetsMapping;
+import com.scenemaxeng.common.types.AssetsMapping;
 import com.scenemaxeng.projector.SceneMaxApp;
 
 import java.io.File;

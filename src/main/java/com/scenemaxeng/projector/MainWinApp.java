@@ -1,6 +1,8 @@
 package com.scenemaxeng.projector;
 
 import com.jme3.system.AppSettings;
+import com.scenemaxeng.common.types.CanvasRect;
+import com.scenemaxeng.common.types.IAppObserver;
 
 import org.apache.commons.io.FileUtils;
 
@@ -144,7 +146,7 @@ public class MainWinApp implements IAppObserver {
     private String loadAppScript() {
 
         String program = "";
-        String path = "script.txt";
+        String path = "main";
         File f=new File(path);
 
         if(f.exists() && f.isFile()) {

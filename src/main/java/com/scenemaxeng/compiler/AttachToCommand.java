@@ -15,4 +15,5 @@ public class AttachToCommand extends VariableActionStatement {
 
     public String entityRot;
     public String jointName;
+    public String sourceJointName;
 }

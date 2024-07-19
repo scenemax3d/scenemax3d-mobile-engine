@@ -7,14 +7,12 @@ public class SceneMaxThread  {
     public static final int THREAD_TYPE_LOOPER = 10;
     public static final int THREAD_TYPE_RETURN_POINT = 20;
 
-
     public SceneMaxThread parent = null;
     private static int threadSeq=0;
     public final int threadId;
     public CompositeController mainController = null;
     public HashMap<String, VarInst> vars_index = new HashMap<String, VarInst>();
     public SceneMaxThread sequenceCreatorThread;
-    private HashMap<String, Object> csharpRegisters = new HashMap<>();
     public HashMap<String, ModelInst> models = new HashMap<>();
     public HashMap<String, SpriteInst> sprites = new HashMap<>();
     public HashMap<String, SphereInst> spheres = new HashMap<>();
@@ -39,28 +37,27 @@ public class SceneMaxThread  {
         }
     }
 
-    public void setCSharpRegister(String targetRegister, Object val) {
-        csharpRegisters.put(targetRegister, val);
-    }
+    public void reset() {
 
-    public Object getCSharpRegisterValue(String registerName) {
-        Object val =  csharpRegisters.get(registerName);
-        if(val==null) {
-            if(parent==null) {
-                return null;
+        for (Object key : this.vars_index.keySet().toArray()) {
+            if (!this.vars_index.get(key).varDef.isShared) {
+                this.vars_index.remove(key);
             }
-
-            return parent.getCSharpRegisterValue(registerName);
-        } else {
-            return val;
         }
+
+        this.mainController = new CompositeController();
+        //this.models = new HashMap<>();
+        this.sprites = new HashMap<>();
+        this.spheres = new HashMap<>();
+        this.boxes = new HashMap<>();
+        this.groups = new HashMap<>();
     }
 
     public VarInst getVar(String targetVar) {
 
         if(funcScopeParams!=null) {
             Object val = funcScopeParams.get(targetVar);
-            if (val != null && val instanceof VarInst) {
+            if (val instanceof VarInst) {
                 return (VarInst) val;
             }
         }
@@ -83,7 +80,7 @@ public class SceneMaxThread  {
 
         if(funcScopeParams!=null) {
             Object val = funcScopeParams.get(varName);
-            if (val != null && val instanceof BoxInst) {
+            if (val instanceof BoxInst) {
                 return (BoxInst) val;
             }
         }
@@ -106,7 +103,7 @@ public class SceneMaxThread  {
 
         if(funcScopeParams!=null) {
             Object val = funcScopeParams.get(varName);
-            if (val != null && val instanceof GroupInst) {
+            if (val instanceof GroupInst) {
                 return (GroupInst) val;
             }
         }
@@ -129,7 +126,7 @@ public class SceneMaxThread  {
 
         if(funcScopeParams!=null) {
             Object val = funcScopeParams.get(varName);
-            if (val != null && val instanceof SphereInst) {
+            if (val instanceof SphereInst) {
                 return (SphereInst) val;
             }
         }
@@ -153,7 +150,7 @@ public class SceneMaxThread  {
 
         if(funcScopeParams!=null) {
             Object val = funcScopeParams.get(varName);
-            if (val != null && val instanceof ModelInst) {
+            if (val instanceof ModelInst) {
                 return (ModelInst) val;
             }
         }
@@ -182,7 +179,7 @@ public class SceneMaxThread  {
 
         if(funcScopeParams!=null) {
             Object val = funcScopeParams.get(varName);
-            if (val != null && val instanceof SpriteInst) {
+            if (val instanceof SpriteInst) {
                 return (SpriteInst) val;
             }
         }
@@ -218,23 +215,19 @@ public class SceneMaxThread  {
 
     public EntityInstBase getEntityInst(String var) {
 
-//        Object vi = this.funcScopeParams.get(var);
-//        if(vi!=null && vi instanceof EntityInstBase) {
-//            return (EntityInstBase)vi;
-//        }
-
         ModelInst mi = this.getModel(var);
         if(mi==null) {
             SpriteInst si = this.getSprite(var);
             if(si==null) {
                 SphereInst sphi = this.getSphere(var);
                 if(sphi==null) {
-
                     BoxInst bxi = this.getBox(var);
                     if(bxi==null) {
-
+                        VarInst vi = this.getVar(var);
+                        if (vi != null && vi.value instanceof EntityInstBase) {
+                            return (EntityInstBase) vi.value;
+                        }
                         return null;
-
                     } else {
                         return bxi;
                     }

@@ -1,20 +1,12 @@
 package com.scenemaxeng.projector;
 
-import android.content.Context;
-
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.scenemaxeng.compiler.DirectionVerb;
 import com.scenemaxeng.compiler.PositionStatement;
-
 import org.apache.commons.io.FileUtils;
 
-import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 public class Util {
@@ -67,27 +59,11 @@ public class Util {
 
     }
 
-    public static String readAssetsfile(String fileName, Context context) {
-        String json = null;
-        try {
-            InputStream is = context.getAssets().open(fileName);
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-            json = new String(buffer, "UTF-8");
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            return null;
-        }
-        return json;
-    }
-
     public static String readFile(File f) {
 
         String text = "";
         try {
-            text = FileUtils.readFileToString(f, String.valueOf(StandardCharsets.UTF_8));
+            text = FileUtils.readFileToString(f,String.valueOf(StandardCharsets.UTF_8));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -107,6 +83,4 @@ public class Util {
         }
         return out.toByteArray();
     }
-
-
 }

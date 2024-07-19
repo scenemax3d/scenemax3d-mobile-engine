@@ -41,13 +41,12 @@ public class AttachToController extends SceneMaxBaseController{
             offsetRot = new Vector3f(xRot.floatValue(),yRot.floatValue(),zRot.floatValue());
         }
 
-
         if(cmd.entityNameToAttach.equalsIgnoreCase("camera")) {
             app.setFpsCameraOn(targetEntity.varName, targetEntity.varDef, offsetPos,offsetRot);
         } else {
             RunTimeVarDef entityToAttach = findTargetVar(cmd.entityNameToAttach);
-            String jointName=cmd.jointName;
-            app.attachEntity(targetEntity, entityToAttach, jointName, xPos, yPos, zPos);
+            //app.attachEntity(targetEntity, entityToAttach, jointName, xPos, yPos, zPos);
+            app.attachEntity2(entityToAttach, cmd.sourceJointName, targetEntity, cmd.jointName, xPos, yPos, zPos);
         }
 
         return true;

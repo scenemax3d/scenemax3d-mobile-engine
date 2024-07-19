@@ -4,15 +4,49 @@ import com.scenemaxeng.compiler.ActionCommandAnimate;
 
 public class AnimateCompositeController extends CompositeController{
 
-    private boolean loopAnimations;
+    private final boolean loopAnimations;
+    private boolean started = false;
 
-    public AnimateCompositeController(ActionCommandAnimate cmd) {
+    public AnimateCompositeController(ActionCommandAnimate cmd, SceneMaxThread thread) {
+        this.thread = thread;
+        this.cmd = cmd;
         loopAnimations = cmd.loop;
         this.adhereToPauseStatus=false;
     }
 
     @Override
+    public void init() {
+        super.init();
+    }
+
+    @Override
     public boolean run(float tpf) {
+
+        if(!this.started) {
+            if(cmd.varDef==null) {
+                app.handleRuntimeError("Line: "+cmd.varLineNum+".  variable '"+cmd.targetVar+"' is undefined");
+                this.stopAnimationSequence();
+                return true;
+            }
+
+            findTargetVar();
+            AppModel m = app.getAppModel(this.targetVar);
+            if(m==null) {
+                app.handleRuntimeError("Line: "+cmd.varLineNum+".  run-time instance '"+cmd.targetVar+"' not found");
+                this.stopAnimationSequence();
+                return true;
+            }
+            // remove the old animate composite controller if it exists
+            if(m.currentAction!=null) {
+                if (m.currentAction.isProtected) {
+                    return true;
+                }
+                SceneMaxBaseController hostController = m.currentAction.getHostController();
+                ((AnimateCompositeController)hostController.parentController).stopAnimationSequence();
+            }
+
+            this.started = true;
+        }
 
         if(_controllers.size()==0) return true;
 
@@ -48,7 +82,7 @@ public class AnimateCompositeController extends CompositeController{
 
     }
 
-    public void stopAnimationLoop() {
+    public void stopAnimationSequence() {
         _controllers.clear();
     }
 

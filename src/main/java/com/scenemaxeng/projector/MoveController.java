@@ -6,29 +6,26 @@ import com.scenemaxeng.compiler.VariableDef;
 
 public class MoveController extends SceneMaxBaseController{
 
-    private final SceneMaxApp app;
+
     public String axis;
     public String numSign;
     public String num;
-    public String targetVar;
 
     private float passedTime = 0;
     private float targetTime=0;
     private float targetVal=0;
     private int axisNum = -1;
     private float direction = 1;
-    public VariableDef targetVarDef;
+
     public ActionLogicalExpression numExpr;
     private boolean targetCalculated=false;
     public ActionLogicalExpression speedExpr;
-    private SceneMaxThread thread;
+
     private ActionCommandMove cmd;
 
-    public MoveController(SceneMaxApp app, SceneMaxThread thread, ActionCommandMove cmd) {
-        this.app=app;
-        this.thread=thread;
+    public MoveController(SceneMaxApp app, ProgramDef prg, SceneMaxThread thread, ActionCommandMove cmd) {
+        super(app, prg, thread, cmd);
         this.cmd=cmd;
-
     }
 
     @Override
@@ -58,25 +55,25 @@ public class MoveController extends SceneMaxBaseController{
         if(!targetCalculated) {
             targetVal = numExpr==null?1.0f:Float.parseFloat(numExpr.evaluate().toString());//   Float.parseFloat(num);
             targetTime = speedExpr==null?1.0f:Float.parseFloat(speedExpr.evaluate().toString());
-
-            if(cmd.varDef.varType==VariableDef.VAR_TYPE_SPHERE || cmd.varDef.varType==VariableDef.VAR_TYPE_BOX) {
-                int threadId = app.getEntityThreadId(thread, cmd.targetVar,cmd.varDef.varType);
-                this.targetVar = cmd.varDef.varName + "@" + threadId;//cmd.targetVar;
-            } else if(cmd.varDef.varType== VariableDef.VAR_TYPE_OBJECT) {
-                EntityInstBase obj = (EntityInstBase) thread.getFuncScopeParam(cmd.varDef.varName);
-
-                if(obj==null) {
-                    app.handleRuntimeError("Function argument '"+cmd.varDef.varName+"' is undefined");
-                    return true;
-                }
-
-                this.targetVar = obj.varDef.varName + "@" + obj.thread.threadId;
-                targetVarDef=new VariableDef();// in order to avoid overriding varType
-                targetVarDef.varType = obj.varDef.varType;
-            } else if(cmd.varDef.varType!= VariableDef.VAR_TYPE_CAMERA) {
-                int threadId = app.getEntityThreadId(thread, cmd.targetVar);
-                this.targetVar = cmd.varDef.varName + "@" + threadId;//cmd.targetVar;
-            }
+            this.findTargetVar();
+//            if(cmd.varDef.varType==VariableDef.VAR_TYPE_SPHERE || cmd.varDef.varType==VariableDef.VAR_TYPE_BOX) {
+//                int threadId = app.getEntityThreadId(thread, cmd.targetVar,cmd.varDef.varType);
+//                this.targetVar = cmd.varDef.varName + "@" + threadId;//cmd.targetVar;
+//            } else if(cmd.varDef.varType== VariableDef.VAR_TYPE_OBJECT) {
+//                EntityInstBase obj = (EntityInstBase) thread.getFuncScopeParam(cmd.varDef.varName);
+//
+//                if(obj==null) {
+//                    app.handleRuntimeError("Function argument '"+cmd.varDef.varName+"' is undefined");
+//                    return true;
+//                }
+//
+//                this.targetVar = obj.varDef.varName + "@" + obj.thread.threadId;
+//                targetVarDef=new VariableDef();// in order to avoid overriding varType
+//                targetVarDef.varType = obj.varDef.varType;
+//            } else if(cmd.varDef.varType!= VariableDef.VAR_TYPE_CAMERA) {
+//                int threadId = app.getEntityThreadId(thread, cmd.targetVar);
+//                this.targetVar = cmd.varDef.varName + "@" + threadId;//cmd.targetVar;
+//            }
 
             this.enableEntity(targetVar);// enable this entity
             targetCalculated=true;
@@ -124,6 +121,13 @@ public class MoveController extends SceneMaxBaseController{
 
         }
 
+        if(finished && this.cmd.loopExpr!=null) {
+            Object cond = new ActionLogicalExpression(this.cmd.loopExpr,this.thread).evaluate();
+            if(cond instanceof Boolean && ((Boolean)cond)) {
+                finished=false;
+                passedTime=0;
+            }
+        }
 
         return finished;
     }

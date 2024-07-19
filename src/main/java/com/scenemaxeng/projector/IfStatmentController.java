@@ -1,7 +1,7 @@
 package com.scenemaxeng.projector;
 
-import com.scenemaxeng.compiler.DoBlockCommand;
 import com.scenemaxeng.compiler.IfStatementCommand;
+import com.scenemaxeng.compiler.DoBlockCommand;
 
 public class IfStatmentController extends CompositeController {
 
@@ -40,8 +40,6 @@ public class IfStatmentController extends CompositeController {
             if(evalExpr(ifExpr)) {
                 DoBlockCommand cmd = ifCommand.doBlock;
                 DoBlockController c = new DoBlockController((SceneMaxApp)app,thread, cmd);
-                //c.cmd = cmd;
-                c.app = (SceneMaxApp)app;
                 c.async = cmd.isAsync;
                 this.add(c);
             } else if(ifCommand.elseIfCommands!=null && ifCommand.elseIfCommands.size()>0) {
@@ -52,10 +50,8 @@ public class IfStatmentController extends CompositeController {
                     if(evalExpr(new ActionLogicalExpression(elseifCmd.expression,thread))) {
                         DoBlockCommand cmd = elseifCmd.doBlock;
                         DoBlockController c = new DoBlockController((SceneMaxApp)app,thread,cmd);
-                        //c.cmd = cmd;
                         c.app = (SceneMaxApp)app;
                         c.async = cmd.isAsync;
-
                         this.add(c);
                         elseifBranchExist=true;
                         break; // do not check other else-if blocks
@@ -83,5 +79,5 @@ public class IfStatmentController extends CompositeController {
         return super.run(tpf);
 
     }
-    
+
 }

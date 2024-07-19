@@ -1,4 +1,4 @@
-package com.scenemaxeng.projector;
+package com.scenemaxeng.common.types;
 
 import android.content.Context;
 

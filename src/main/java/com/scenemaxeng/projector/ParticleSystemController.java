@@ -41,13 +41,10 @@ public class ParticleSystemController extends SceneMaxBaseController {
             cmd.timeVal = ((Double) new ActionLogicalExpression(cmd.time.logical_expression(), thread).evaluate()).floatValue();
         }
 
-        if(cmd.entityPos!=null) {
-
+        if (cmd.entityPos!=null) {
             RunTimeVarDef entityForPos = app.findVarRuntime(prg,thread,cmd.entityPos.entityName);
             if(entityForPos!=null) {
-
                 Spatial sp = null;
-
                 if(cmd.entityPos.entityJointName!=null) {
                     AppModel am = app.getAppModel(entityForPos.varName);
                     sp = am.getJointAttachementNode(cmd.entityPos.entityJointName);

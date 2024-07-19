@@ -3,6 +3,7 @@ package com.scenemaxeng.projector;
 import com.jayfella.jme.vehicle.part.Engine;
 import com.jme3.math.Spline;
 import com.jme3.math.Vector3f;
+import com.scenemaxeng.common.types.SceneMaxEngine;
 
 public class SceneMax3DGenericEngine extends Engine {
 

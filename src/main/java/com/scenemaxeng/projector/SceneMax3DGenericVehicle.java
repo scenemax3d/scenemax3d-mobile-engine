@@ -16,6 +16,9 @@ import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
+import com.scenemaxeng.common.types.ResourceSetup;
+import com.scenemaxeng.common.types.SceneMaxGearBox;
+import com.scenemaxeng.common.types.SceneMaxWheel;
 
 import java.io.File;
 import java.util.logging.Level;

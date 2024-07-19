@@ -7,20 +7,18 @@ import com.jme3.animation.AnimControl;
 import com.jme3.animation.AnimEventListener;
 import com.jme3.animation.LoopMode;
 
-
 public class AppModelAnimationController implements AnimEventListener {
 
-    //public CharacterAction currentAction=null;
     public boolean animationFinished = false;
     public SceneMaxBaseController hostController = null;
     private String animationName = null;
     public AppModel appModel;
     private double globalSpeed;
     private boolean paused;
+    public boolean isProtected = false;
 
     public AppModelAnimationController(SceneMaxBaseController hostController) {
         this.hostController=hostController;
-
     }
 
     @Override
@@ -50,6 +48,7 @@ public class AppModelAnimationController implements AnimEventListener {
                 AnimControl control = m.getAnimControl();
                 control.addListener(this);
                 AnimChannel channel = m.getChannel();
+                channel.reset(false);
                 channel.setAnim(animationName);
                 channel.setLoopMode(LoopMode.DontLoop);
                 Float animSpeed = Float.parseFloat(speed);
@@ -70,37 +69,27 @@ public class AppModelAnimationController implements AnimEventListener {
 
                 } else {
                     this.animationFinished = false;
-                    ((CharacterAction)ac).setController(this);
+                    ((CharacterAction) ac).finishAnimation(); // free current controller's animation
+                    ((CharacterAction) ac).setController(this); // set new controller
                 }
 
                 Double animSpeed = Double.parseDouble(speed);
                 ac.setSpeed(animSpeed);
 
-                if(m.currentAction==null) {
-                    m.currentAction = (CharacterAction)ac;
+                if (m.currentAction == null) {
+                    m.currentAction = (CharacterAction) ac;
                     composer.setCurrentAction(animationName);
-                } else if(m.currentAction!=null && ac!=m.currentAction) {
-
-                    m.currentAction.finishAnimation();
-
-                    SceneMaxBaseController currHostController = m.currentAction.getHostController();
-                    SceneMaxBaseController newHostController = ((CharacterAction)ac).getHostController();
-
-                    SceneMaxBaseController currHostParent = currHostController.parentController;
-                    SceneMaxBaseController newHostParent = newHostController.parentController;
-                    if(currHostParent!=newHostParent) {
-                        ((AnimateCompositeController) currHostParent).stopAnimationLoop();
+                } else {
+                    if(ac!=m.currentAction) {
+                        m.currentAction.finishAnimation();
+                        m.currentAction = (CharacterAction)ac;
+                        composer.setCurrentAction(animationName);
                     }
 
-                    m.currentAction = (CharacterAction)ac;
-                    composer.setCurrentAction(animationName);
-
                 }
-
-
             }
 
-        }catch(Exception e) {
+        } catch(Exception e) {
             e.printStackTrace();
             System.out.println("Problem running animation " + animationName);
             animationFinished = true;

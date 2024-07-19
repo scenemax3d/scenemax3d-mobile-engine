@@ -6,24 +6,24 @@ import com.jme3.anim.tween.action.BaseAction;
 
 public class CharacterAction extends BaseAction {
 
-    private AppModelAnimationController controller;
+    public AppModelAnimationController controller;
+    public boolean isProtected = false;
     AnimComposer ac;
 
     public CharacterAction(AppModelAnimationController controller, Tween delegate, AnimComposer ac) {
         super(delegate);
         this.ac = ac;
         this.controller=controller;
-
+        this.isProtected = this.controller.isProtected;
     }
 
     @Override
     public boolean interpolate(double t) {
         boolean running = super.interpolate(t);
         if (!running) {
-            //ac.removeCurrentAction(AnimComposer.DEFAULT_LAYER);
             this.setSpeed(0);
             this.controller.animationFinished = true;
-            this.controller.appModel.currentAction=null;
+            this.isProtected = false;
         }
         return running;
     }
@@ -34,6 +34,7 @@ public class CharacterAction extends BaseAction {
 
     public void setController(AppModelAnimationController ctl) {
         this.controller=ctl;
+        this.isProtected = ctl.isProtected;
     }
 
     public SceneMaxBaseController getHostController() {

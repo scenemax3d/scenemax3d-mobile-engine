@@ -9,22 +9,8 @@ import com.scenemaxeng.compiler.VariableDef;
 
 public class EntityPosController extends SceneMaxBaseController {
 
-    private final SceneMaxApp app;
-    private final SceneMaxThread thread;
-    private final ActionCommandPos cmd;
-    private final ProgramDef prg;
-    private String targetVar;
-    private VariableDef targetVarDef;
-
-
     public EntityPosController(SceneMaxApp app, ProgramDef prg, SceneMaxThread thread, ActionCommandPos cmd) {
-        this.app=app;
-        this.thread=thread;
-        this.cmd=cmd;
-        this.prg=prg;
-
-        targetVarDef = cmd.varDef;
-
+        super(app,prg,thread,cmd);
     }
 
     public boolean run(float tpf) {
@@ -36,6 +22,7 @@ public class EntityPosController extends SceneMaxBaseController {
         RunTimeVarDef entityForPos=null;
         Vector3f calculatedPosition=null;
 
+        ActionCommandPos cmd = (ActionCommandPos) this.cmd;
         if(cmd.posStatement!=null) {
             RunTimeVarDef lookatVar = app.findVarRuntime(prg,thread,cmd.posStatement.startEntity);
             Spatial sp = app.getEntitySpatial(lookatVar.varName,lookatVar.varDef.varType);
@@ -54,33 +41,32 @@ public class EntityPosController extends SceneMaxBaseController {
             valY = (Double) new ActionLogicalExpression(cmd.y, thread).evaluate();
             valZ = (Double) new ActionLogicalExpression(cmd.z, thread).evaluate();
         } else if(cmd.entityPos!=null) {
-            entityForPos = app.findVarRuntime(prg,thread,cmd.entityPos);
+
+            entityForPos = app.findVarRuntime(prg,thread,cmd.entityPos.entityName);
+            if(entityForPos!=null) {
+                Spatial sp = null;
+                if(cmd.entityPos.entityJointName!=null) {
+                    AppModel am = app.getAppModel(entityForPos.varName);
+                    sp = am.getJointAttachementNode(cmd.entityPos.entityJointName);
+                } else {
+                    sp = app.getEntitySpatial(entityForPos.varName, entityForPos.varDef.varType);
+                }
+
+                if (sp != null) {
+                    calculatedPosition = sp.getWorldTranslation();// sp.getLocalTranslation();
+                }
+            }
         }
 
-        if(cmd.varDef.varType== VariableDef.VAR_TYPE_SPHERE || cmd.varDef.varType== VariableDef.VAR_TYPE_BOX) {
-            int threadId = app.getEntityThreadId(thread, cmd.varName ,cmd.varDef.varType);
-            this.targetVar = cmd.varDef.varName + "@" + threadId;
-        } else if(cmd.varDef.varType== VariableDef.VAR_TYPE_OBJECT) {
-            EntityInstBase obj = (EntityInstBase) thread.getFuncScopeParam(cmd.varDef.varName);
-
-            if(obj==null) {
-                app.handleRuntimeError("Function argument '"+cmd.varDef.varName+"' is undefined");
-                return true;
-            }
-
-            this.targetVar = obj.varDef.varName + "@" + obj.thread.threadId;
-            targetVarDef=new VariableDef();// in order to avoid overriding varType
-            targetVarDef.varType = obj.varDef.varType;
-        } else if(cmd.varDef.varType!= VariableDef.VAR_TYPE_CAMERA) {
-            int threadId = app.getEntityThreadId(thread, cmd.varName);
-            this.targetVar = cmd.varDef.varName + "@" + threadId;
+        if (!this.targetCalculated) {
+            this.findTargetVar();
+            this.targetCalculated = true;
         }
 
         this.enableEntity(targetVar);// enable this entity
         if(StopModelController.forceStopCommands.get(targetVar)!=null) {
             return true;
         }
-
 
         if(targetVarDef.varType== ProgramDef.VAR_TYPE_3D){
             app.posModel(targetVar,valX,valY,valZ, entityForPos, calculatedPosition);
