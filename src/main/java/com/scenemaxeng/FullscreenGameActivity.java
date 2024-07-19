@@ -163,7 +163,8 @@ public class FullscreenGameActivity extends Activity {
 
                     JSONObject obj = (JSONObject)res;
                     try {
-                        FullscreenGameActivity.this.targetScriptPath = obj.getString("targetScriptPath");
+                        //FullscreenGameActivity.this.targetScriptPath = obj.getString("targetScriptPath");
+                        FullscreenGameActivity.this.targetScriptPath = obj.getString("scriptFile");
                         FullscreenGameActivity.this.resourcesHash = obj.getString("resourcesHash");
 
                     } catch (JSONException e) {
