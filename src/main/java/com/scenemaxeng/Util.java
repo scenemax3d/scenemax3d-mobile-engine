@@ -98,16 +98,15 @@ public class Util {
                 File file = new File(targetDirectory, ze.getName());
                 System.out.println("extracting: " + file.getAbsolutePath());
                 File dir = ze.isDirectory() ? file : file.getParentFile();
-                if(dir.isDirectory()) {
-                    if(dir.mkdirs()) {
-                        System.out.println("directory created: " + dir.getAbsolutePath());
-                    }
-                } else {
-                    if (file.createNewFile()) {
-                        System.out.println("file created: " + file.getAbsolutePath());
-                    }
-
+                if(file.mkdirs()) {
+                    System.out.println("directory created: " + dir.getAbsolutePath());
                 }
+
+                if (file.createNewFile()) {
+                    System.out.println("file created: " + file.getAbsolutePath());
+                }
+
+
 //                if (!dir.isDirectory() && !dir.mkdirs())
 //                    throw new FileNotFoundException("Failed to ensure directory: " +
 //                            dir.getAbsolutePath());
