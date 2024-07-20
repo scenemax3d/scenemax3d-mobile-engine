@@ -94,11 +94,16 @@ public class Util {
             int count;
             byte[] buffer = new byte[8192];
             while ((ze = zis.getNextEntry()) != null) {
+
                 File file = new File(targetDirectory, ze.getName());
+                System.out.println("extracting: " + file.getAbsolutePath());
                 File dir = ze.isDirectory() ? file : file.getParentFile();
-                if (!dir.isDirectory() && !dir.mkdirs())
-                    throw new FileNotFoundException("Failed to ensure directory: " +
-                            dir.getAbsolutePath());
+                if(dir.isDirectory()) {
+                    dir.mkdirs();
+                }
+//                if (!dir.isDirectory() && !dir.mkdirs())
+//                    throw new FileNotFoundException("Failed to ensure directory: " +
+//                            dir.getAbsolutePath());
                 if (ze.isDirectory())
                     continue;
                 FileOutputStream fout = new FileOutputStream(file);
@@ -108,11 +113,7 @@ public class Util {
                 } finally {
                     fout.close();
                 }
-            /* if time should be restored as well
-            long time = ze.getTime();
-            if (time > 0)
-                file.setLastModified(time);
-            */
+
             }
         } finally {
             zis.close();
@@ -184,6 +185,7 @@ public class Util {
     }
 
     public static String getResourcesFolder() {
+
         File basePath = ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
         File projFolder = new File(basePath,"projects/"+activeProject);
         return new File(projFolder,"resources").getAbsolutePath();

@@ -402,10 +402,8 @@ public class ImportProgramZipFileTask {
 
     protected Integer doInBackground(File src) throws Exception {
 
-        // ****
         String targetFolderName = src.getName();
         String targetScriptFile = "";
-        boolean importResourcesOnly = false;
 
         for (File f:src.listFiles()) {
             if(f.isFile()) {
@@ -425,7 +423,7 @@ public class ImportProgramZipFileTask {
                     }
                     System.out.println("extract targetScriptFile = "+targetScriptFile);
                     if (config.has("resOnly")) {
-                        importResourcesOnly=config.getBoolean("resOnly");
+                        //importResourcesOnly=config.getBoolean("resOnly");
                     }
 
                     if (config.has("resourcesHash")) {
@@ -438,12 +436,9 @@ public class ImportProgramZipFileTask {
         }
 
         File scriptFolder = null;
-        // create parent folder if needed
-        if(!importResourcesOnly) {
-            scriptFolder = new File(Util.getScriptsFolder()+"/" + targetFolderName);
-            if (!scriptFolder.exists()) {
-                scriptFolder.mkdirs();
-            }
+        scriptFolder = new File(Util.getScriptsFolder()+"/" + targetFolderName);
+        if (!scriptFolder.exists()) {
+            scriptFolder.mkdirs();
         }
 
         // copy script files
@@ -458,28 +453,6 @@ public class ImportProgramZipFileTask {
                     targetScriptPath = new File(scriptFolder, "main").getAbsolutePath();
                     System.out.println("set main script file. targetScriptPath = " + targetScriptPath);
                 }
-//                else {
-
-//                    if(!importResourcesOnly) {
-//                        File destFile = new File(scriptFolder.getAbsolutePath() + "/" + f.getName());
-//                        // delete existing file if exists
-//                        if (destFile.exists()) {
-//                            // backup existing
-//                            File backupFile = new File(scriptFolder.getAbsolutePath() + "/" + f.getName() + ".bkup");
-//                            FileUtils.copyFile(destFile, backupFile);
-//                            destFile.delete();
-//                        }
-//
-//                        FileUtils.copyFileToDirectory(f, scriptFolder);
-//
-//                        // allow main script file to be auto selected
-//                        if (f.getName().equals(targetScriptFile)) {
-//                            targetScriptPath = destFile.getAbsolutePath();
-//                            System.out.println("found script file. targetScriptPath = " + targetScriptPath);
-//                        }
-//                    }
-//
-//                }
             } else if(f.getName().equals("export_res")) {
                 for(File resFile:f.listFiles()) {
                     if(resFile.isDirectory()) {
