@@ -448,10 +448,6 @@ public class ImportProgramZipFileTask {
                     // not copying this file
                 } else if(f.getName().equals("resources.json")) {
                     copyResourcesIndex(src,f);
-                } else if(f.getName().equals("__export_src")) {
-                    FileUtils.copyDirectory(new File(f, targetFolderName), scriptFolder);
-                    targetScriptPath = new File(scriptFolder, "main").getAbsolutePath();
-                    System.out.println("set main script file. targetScriptPath = " + targetScriptPath);
                 }
             } else if(f.getName().equals("export_res")) {
                 for(File resFile:f.listFiles()) {
@@ -467,6 +463,10 @@ public class ImportProgramZipFileTask {
 
                     }
                 }
+            } else if(f.getName().equals("export_src")) {
+                FileUtils.copyDirectory(new File(f, targetFolderName), scriptFolder);
+                targetScriptPath = new File(scriptFolder, "main").getAbsolutePath();
+                System.out.println("set main script file. targetScriptPath = " + targetScriptPath);
             }
         }
 
