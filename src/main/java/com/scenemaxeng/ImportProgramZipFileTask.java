@@ -410,8 +410,10 @@ public class ImportProgramZipFileTask {
         for (File f:src.listFiles()) {
             if(f.isFile()) {
                 if (f.getName().equals("extract_config.json")) {
+
                     String json = Util.readFile(f);
                     JSONObject config = new JSONObject(json);
+                    System.out.println("extracting extract_config.json. content = "+config.toString(2));
                     if(config.has("targetFolder")) {
                         targetFolderName=config.getString("targetFolder");
                     }
@@ -421,7 +423,7 @@ public class ImportProgramZipFileTask {
                     } else {
                         targetScriptFile = "main";
                     }
-
+                    System.out.println("extract targetScriptFile = "+targetScriptFile);
                     if (config.has("resOnly")) {
                         importResourcesOnly=config.getBoolean("resOnly");
                     }
@@ -443,7 +445,6 @@ public class ImportProgramZipFileTask {
                 scriptFolder.mkdir();
             }
         }
-
 
         // copy script files + cs files
         for (File f:src.listFiles()) {
@@ -470,6 +471,7 @@ public class ImportProgramZipFileTask {
                         // allow main script file to be auto selected
                         if (f.getName().equals(targetScriptFile)) {
                             targetScriptPath = destFile.getAbsolutePath();
+                            System.out.println("found script file. targetScriptPath = " + targetScriptPath);
                         }
                     }
 

@@ -154,7 +154,9 @@ public class FullscreenGameActivity extends Activity {
     private void importProgram() {
         InputStream is = this.getResources().openRawResource(R.raw.code);
         File code = new File(this.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),"code.zip");
+        System.out.println("copy code.zip to: " + code.getAbsolutePath());
         com.scenemaxeng.Util.copyInputStreamToFile(is, code);
+        System.out.println("start importing: " + code.getAbsolutePath());
         new ImportProgramZipFileTask(code.getAbsolutePath(), new Callback() {
 
             @Override
@@ -163,8 +165,8 @@ public class FullscreenGameActivity extends Activity {
 
                     JSONObject obj = (JSONObject)res;
                     try {
-                        //FullscreenGameActivity.this.targetScriptPath = obj.getString("targetScriptPath");
-                        FullscreenGameActivity.this.targetScriptPath = obj.getString("scriptFile");
+                        System.out.println("done importing code.zip. received config: "+obj.toString(2));
+                        FullscreenGameActivity.this.targetScriptPath = obj.getString("targetScriptPath");
                         FullscreenGameActivity.this.resourcesHash = obj.getString("resourcesHash");
 
                     } catch (JSONException e) {
