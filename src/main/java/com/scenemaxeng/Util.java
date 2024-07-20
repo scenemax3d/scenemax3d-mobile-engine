@@ -2,6 +2,8 @@ package com.scenemaxeng;
 
 import android.content.Context;
 import android.os.Environment;
+import android.util.Log;
+
 import org.apache.commons.io.FileUtils;
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
@@ -86,32 +88,73 @@ public class Util {
 
     }
 
+//    public static void unzip(File zipFile, File targetDirectory) throws IOException {
+//        ZipInputStream zis = new ZipInputStream(
+//                new BufferedInputStream(new FileInputStream(zipFile)));
+//        try {
+//            ZipEntry ze;
+//            int count;
+//            byte[] buffer = new byte[8192];
+//            while ((ze = zis.getNextEntry()) != null) {
+//
+//                File file = new File(targetDirectory, ze.getName());
+//                System.out.println("extracting: " + file.getAbsolutePath());
+//                File dir = ze.isDirectory() ? file : file.getParentFile();
+//
+//                if (!dir.isDirectory() && !dir.mkdirs()) {
+//                    throw new FileNotFoundException("Failed to ensure directory: " + dir.getAbsolutePath());
+//                }
+//
+//                if (ze.isDirectory())
+//                    continue;
+//                FileOutputStream fout = new FileOutputStream(file);
+//                try {
+//                    while ((count = zis.read(buffer)) != -1)
+//                        fout.write(buffer, 0, count);
+//                } finally {
+//                    fout.close();
+//                }
+//
+//            }
+//        } finally {
+//            zis.close();
+//        }
+//    }
+
+    private static final String TAG = "ZipExtractor";
+
     public static void unzip(File zipFile, File targetDirectory) throws IOException {
-        ZipInputStream zis = new ZipInputStream(
-                new BufferedInputStream(new FileInputStream(zipFile)));
+        ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zipFile)));
         try {
             ZipEntry ze;
             int count;
             byte[] buffer = new byte[8192];
             while ((ze = zis.getNextEntry()) != null) {
-
                 File file = new File(targetDirectory, ze.getName());
-                System.out.println("extracting: " + file.getAbsolutePath());
                 File dir = ze.isDirectory() ? file : file.getParentFile();
 
-                if (!dir.isDirectory() && !dir.mkdirs()) {
+                Log.d(TAG, "Processing entry: " + ze.getName());
+
+                if (!dir.exists() && !dir.mkdirs()) {
                     throw new FileNotFoundException("Failed to ensure directory: " + dir.getAbsolutePath());
                 }
-
-                if (ze.isDirectory())
+                if (ze.isDirectory()) {
+                    Log.d(TAG, "Created directory: " + file.getAbsolutePath());
                     continue;
+                }
+
+                Log.d(TAG, "Creating file: " + file.getAbsolutePath());
+
                 FileOutputStream fout = new FileOutputStream(file);
                 try {
-                    while ((count = zis.read(buffer)) != -1)
+                    while ((count = zis.read(buffer)) != -1) {
                         fout.write(buffer, 0, count);
+                    }
                 } finally {
                     fout.close();
                 }
+
+                Log.d(TAG, "Extracted file: " + file.getAbsolutePath());
 
             }
         } finally {
