@@ -442,40 +442,44 @@ public class ImportProgramZipFileTask {
         if(!importResourcesOnly) {
             scriptFolder = new File(Util.getScriptsFolder()+"/" + targetFolderName);
             if (!scriptFolder.exists()) {
-                scriptFolder.mkdir();
+                scriptFolder.mkdirs();
             }
         }
 
-        // copy script files + cs files
+        // copy script files
         for (File f:src.listFiles()) {
             if(f.isFile()) {
                 if(f.getName().equals("extract_config.json")) {
                     // not copying this file
                 } else if(f.getName().equals("resources.json")) {
                     copyResourcesIndex(src,f);
-                } else {
-
-                    if(!importResourcesOnly) {
-                        File destFile = new File(scriptFolder.getAbsolutePath() + "/" + f.getName());
-                        // delete existing file if exists
-                        if (destFile.exists()) {
-                            // backup existing
-                            File backupFile = new File(scriptFolder.getAbsolutePath() + "/" + f.getName() + ".bkup");
-                            FileUtils.copyFile(destFile, backupFile);
-
-                            destFile.delete();
-                        }
-
-                        FileUtils.copyFileToDirectory(f, scriptFolder);
-
-                        // allow main script file to be auto selected
-                        if (f.getName().equals(targetScriptFile)) {
-                            targetScriptPath = destFile.getAbsolutePath();
-                            System.out.println("found script file. targetScriptPath = " + targetScriptPath);
-                        }
-                    }
-
+                } else if(f.getName().equals("__export_src")) {
+                    FileUtils.copyDirectory(new File(f, targetFolderName), scriptFolder);
+                    targetScriptPath = new File(scriptFolder, "main").getAbsolutePath();
+                    System.out.println("set main script file. targetScriptPath = " + targetScriptPath);
                 }
+//                else {
+
+//                    if(!importResourcesOnly) {
+//                        File destFile = new File(scriptFolder.getAbsolutePath() + "/" + f.getName());
+//                        // delete existing file if exists
+//                        if (destFile.exists()) {
+//                            // backup existing
+//                            File backupFile = new File(scriptFolder.getAbsolutePath() + "/" + f.getName() + ".bkup");
+//                            FileUtils.copyFile(destFile, backupFile);
+//                            destFile.delete();
+//                        }
+//
+//                        FileUtils.copyFileToDirectory(f, scriptFolder);
+//
+//                        // allow main script file to be auto selected
+//                        if (f.getName().equals(targetScriptFile)) {
+//                            targetScriptPath = destFile.getAbsolutePath();
+//                            System.out.println("found script file. targetScriptPath = " + targetScriptPath);
+//                        }
+//                    }
+//
+//                }
             } else if(f.getName().equals("export_res")) {
                 for(File resFile:f.listFiles()) {
                     if(resFile.isDirectory()) {
