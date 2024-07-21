@@ -219,7 +219,8 @@ public class FullscreenGameActivity extends Activity {
     private String applyMacros(String code) {
         AssetManager assetManager = getAssets();
         try {
-            File macroFolder = new File("macro");
+
+            File macroFolder = new File(this.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),"macro");
             if(!macroFolder.exists()) {
                 macroFolder.mkdirs();
             }
