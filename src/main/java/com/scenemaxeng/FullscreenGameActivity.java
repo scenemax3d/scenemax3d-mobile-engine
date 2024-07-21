@@ -227,7 +227,7 @@ public class FullscreenGameActivity extends Activity {
             if (files != null) {
                 for (String file : files) {
                     String macroCode = com.scenemaxeng.Util.readFileFromAssets(assetManager, "macro/" + file);
-                    File macroFile = new File(macroCode, file);
+                    File macroFile = new File(macroFolder, file);
                     FileUtils.writeStringToFile(macroFile, macroCode, String.valueOf(StandardCharsets.UTF_8));
                 }
             }
