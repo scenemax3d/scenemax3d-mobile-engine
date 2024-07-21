@@ -6,6 +6,7 @@ import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
+import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -17,14 +18,18 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.jmedeisis.bugstick.Joystick;
 import com.jmedeisis.bugstick.JoystickListener;
+import com.scenemaxeng.compiler.ApplyMacroResults;
+import com.scenemaxeng.compiler.MacroFilter;
 import com.scenemaxeng.projector.SceneMaxApp;
 import com.scenemaxeng.projector.Util;
 
+import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class FullscreenGameActivity extends Activity {
@@ -198,9 +203,10 @@ public class FullscreenGameActivity extends Activity {
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
+
                     String code = Util.readFile(targetFile);
                     code=code.replaceFirst("^canvas\\.size\\s+((?<val1>\\d+),(?<val2>\\d+))","");;
-
+                    code = applyMacros(code);
                     String workingFolder = targetFile.getParentFile().getAbsolutePath();
                     getJmeFragment().runScript(code, workingFolder);
                     app = (SceneMaxApp) getJmeFragment().getJmeApplication();
@@ -208,6 +214,33 @@ public class FullscreenGameActivity extends Activity {
             },500);
 
         }
+    }
+
+    private String applyMacros(String code) {
+        AssetManager assetManager = getAssets();
+        try {
+            File macroFolder = new File("macro");
+            if(!macroFolder.exists()) {
+                macroFolder.mkdirs();
+            }
+            String[] files = assetManager.list("macro");
+            if (files != null) {
+                for (String file : files) {
+                    String macroCode = com.scenemaxeng.Util.readFileFromAssets(assetManager, "macro/" + file);
+                    File macroFile = new File(macroCode, file);
+                    FileUtils.writeStringToFile(macroFile, macroCode, String.valueOf(StandardCharsets.UTF_8));
+                }
+            }
+
+            MacroFilter macroFilter = new MacroFilter();
+            macroFilter.loadMacroRulesFromMacroFolder(macroFolder);
+            ApplyMacroResults mr = macroFilter.apply(code);
+            code = mr.finalPrg;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return code;
     }
 
     private JmeProjectorFragment getJmeFragment() {

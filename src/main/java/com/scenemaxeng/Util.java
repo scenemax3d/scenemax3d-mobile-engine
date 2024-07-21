@@ -1,11 +1,13 @@
 package com.scenemaxeng;
 
 import android.content.Context;
+import android.content.res.AssetManager;
 import android.os.Environment;
 import android.util.Log;
 
 import org.apache.commons.io.FileUtils;
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,6 +16,7 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipEntry;
@@ -237,6 +240,26 @@ public class Util {
         File basePath = ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
         File projFolder = new File(basePath,"projects/"+activeProject);
         return new File(projFolder,"scripts").getAbsolutePath();
+    }
+
+    public static String readFileFromAssets(AssetManager assetManager, String resPath) {
+        StringBuilder content = new StringBuilder();
+        try {
+            InputStream inputStream = assetManager.open(resPath);//"myfiles/" + file
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                content.append(line);
+            }
+            reader.close();
+            inputStream.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return content.toString();
     }
 
 }

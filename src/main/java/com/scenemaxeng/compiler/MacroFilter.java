@@ -44,16 +44,15 @@ public class MacroFilter {
         this.macroRules = macroRules;
     }
 
-    public void loadMacroRulesFromMacroFolder() {
+    public void loadMacroRulesFromMacroFolder(File macroFolder) {
 
-        File f = new File("macro");
-        if (!f.exists()) {
+        if(!macroFolder.exists()) {
             return;
         }
 
         this.macroRules = new HashMap<>();
 
-        for (File macro : f.listFiles()) {
+        for (File macro : macroFolder.listFiles()) {
             String macroFileName = macro.getName();
             String macroFile = null;
             JSONObject rules = null;
