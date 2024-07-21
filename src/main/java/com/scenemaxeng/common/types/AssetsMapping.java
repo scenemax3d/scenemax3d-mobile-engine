@@ -418,7 +418,9 @@ public class AssetsMapping {
 
         try {
             String data = loadFileFromAssets(path);
-            return new JSONObject(data);
+            if(data != null && data.length() > 0) {
+                return new JSONObject(data);
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -432,8 +434,10 @@ public class AssetsMapping {
         try {
             File f = new File(path);
             if(f.exists()) {
-                String json = Util.readFile(f);
-                return new JSONObject(json);
+                String data = Util.readFile(f);
+                if(data != null && data.length() > 0) {
+                    return new JSONObject(data);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();

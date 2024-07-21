@@ -200,10 +200,9 @@ public class FullscreenGameActivity extends Activity {
         showJmeProjectorFragment();
         File targetFile = new File(this.targetScriptPath);
         if(targetFile.exists()) {
-            new Handler().postDelayed(new Runnable() {
+            runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-
                     String code = Util.readFile(targetFile);
                     code=code.replaceFirst("^canvas\\.size\\s+((?<val1>\\d+),(?<val2>\\d+))","");;
                     code = applyMacros(code);
@@ -211,7 +210,7 @@ public class FullscreenGameActivity extends Activity {
                     getJmeFragment().runScript(code, workingFolder);
                     app = (SceneMaxApp) getJmeFragment().getJmeApplication();
                 }
-            },500);
+            });
 
         }
     }
