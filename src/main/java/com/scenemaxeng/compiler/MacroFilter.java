@@ -19,12 +19,17 @@ public class MacroFilter {
 
     private HashMap<String, JSONObject> macroRules;
 
-    class LexicographicComparator implements Comparator<Object> {
+    static class LexicographicComparator implements Comparator<Object> {
         @Override
         public int compare(Object a, Object b) {
-            HashMap<String, String> a1 = (HashMap<String, String>) a;
-            HashMap<String, String> b1 = (HashMap<String, String>) b;
-            int len = a1.get("pat").length() - b1.get("pat").length();
+            JSONObject a1 = (JSONObject) a;
+            JSONObject b1 = (JSONObject) b;
+            int len = 0;
+            try {
+                len = a1.getString("pat").length() - b1.getString("pat").length();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
 
             if (len > 0) {
                 return -1;
@@ -91,15 +96,15 @@ public class MacroFilter {
 
                 List<Object> patternsSorted = new ArrayList<>();// patterns.toList();
                 for (int i = 0; i < patterns.length(); i++) {
-                    patternsSorted.add(patterns.getString(i));
+                    patternsSorted.add(patterns.getJSONObject(i));
                 }
                 Collections.sort(patternsSorted, new LexicographicComparator());
 
                 for (int i = 0; i < patternsSorted.size(); ++i) {
 
-                    HashMap<String, String> item = (HashMap<String, String>) patternsSorted.get(i);
+                    JSONObject item = (JSONObject) patternsSorted.get(i);
 
-                    String pat = item.get("pat");
+                    String pat = item.getString("pat");
                     if (pat.length() == 0) {
                         continue;
                     }
@@ -122,7 +127,7 @@ public class MacroFilter {
                         }
                     }
 
-                    String program = item.get("prg");
+                    String program = item.getString("prg");
 
                     Pattern p = Pattern.compile(pat);
                     Matcher m = p.matcher(mr.finalPrg);
