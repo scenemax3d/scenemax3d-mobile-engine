@@ -160,7 +160,10 @@ public class Util {
                 Log.d(TAG, "Extracted file: " + file.getAbsolutePath());
 
             }
-        } finally {
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        finally {
             zis.close();
         }
     }

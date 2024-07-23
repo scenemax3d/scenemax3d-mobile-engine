@@ -43,7 +43,8 @@ public class ImportProgramZipFileTask {
         }
 
         try {
-            Util.unzip(new File(zipFile),new File(folder.getAbsolutePath()));
+            ZipUtils.unzip(zipFile,folder.getAbsolutePath());
+            //Util.unzip(new File(zipFile),new File(folder.getAbsolutePath()));
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -53,6 +53,7 @@ dependencies {
     implementation "org.jmonkeyengine:jme3-android-native:3.5.2-stable"
     implementation 'com.github.stephengold:SkyControl:1.0.2'
     implementation group: 'commons-io', name: 'commons-io', version: '2.0.1'
+    implementation 'org.apache.commons:commons-compress:1.21'
     implementation 'com.github.stephengold:MaVehicles:0.7.0'
     implementation "com.github.stephengold:Minie:5.0.0"
     implementation 'com.github.stephengold:Garrett:0.4.0'
