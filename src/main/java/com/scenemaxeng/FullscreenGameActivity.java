@@ -69,14 +69,6 @@ public class FullscreenGameActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if(!destroyed) {
-                    startGame();
-                }
-            }
-        },1000);
     }
 
     @Override
@@ -84,7 +76,6 @@ public class FullscreenGameActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         com.scenemaxeng.Util.setContext(this);
-        importProgram();
 
         setContentView(R.layout.activity_fullscreen_game);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -154,9 +145,16 @@ public class FullscreenGameActivity extends Activity {
             }
         });
 
+        importProgram(new Runnable() {
+            @Override
+            public void run() {
+                startGame();
+            }
+        });
+
     }
 
-    private void importProgram() {
+    private void importProgram(Runnable done) {
         InputStream is = this.getResources().openRawResource(R.raw.code);
         File code = new File(this.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),"code.zip");
         System.out.println("copy code.zip to: " + code.getAbsolutePath());
@@ -173,7 +171,7 @@ public class FullscreenGameActivity extends Activity {
                         System.out.println("done importing code.zip. received config: "+obj.toString(2));
                         FullscreenGameActivity.this.targetScriptPath = obj.getString("targetScriptPath");
                         FullscreenGameActivity.this.resourcesHash = obj.getString("resourcesHash");
-
+                        done.run();
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -198,21 +196,19 @@ public class FullscreenGameActivity extends Activity {
         }
 
         showJmeProjectorFragment();
-        File targetFile = new File(this.targetScriptPath);
-        if(targetFile.exists()) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    String code = Util.readFile(targetFile);
-                    code=code.replaceFirst("^canvas\\.size\\s+((?<val1>\\d+),(?<val2>\\d+))","");;
-                    code = applyMacros(code);
-                    String workingFolder = targetFile.getParentFile().getAbsolutePath();
-                    getJmeFragment().runScript(code, workingFolder);
-                    app = (SceneMaxApp) getJmeFragment().getJmeApplication();
-                }
-            });
+        new Handler().postDelayed(() -> {
+            File targetFile = new File(this.targetScriptPath);
+            if(targetFile.exists()) {
+                String code = Util.readFile(targetFile);
+                code=code.replaceFirst("^canvas\\.size\\s+((?<val1>\\d+),(?<val2>\\d+))","");;
+                code = applyMacros(code);
+                String workingFolder = targetFile.getParentFile().getAbsolutePath();
+                getJmeFragment().runScript(code, workingFolder);
+                app = (SceneMaxApp) getJmeFragment().getJmeApplication();
 
-        }
+            }
+        }, 5000);
+
     }
 
     private String applyMacros(String code) {
@@ -249,21 +245,14 @@ public class FullscreenGameActivity extends Activity {
 
     private void showJmeProjectorFragment() {
 
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                List<Fragment> fragments = getFragmentManager().getFragments();
+        List<Fragment> fragments = getFragmentManager().getFragments();
 
-                jmeFragment = new JmeProjectorFragment();
-                FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.frame, jmeFragment);
-                fragmentTransaction.commitAllowingStateLoss();
-
-            }
-        });
+        jmeFragment = new JmeProjectorFragment();
+        FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.frame, jmeFragment);
+        fragmentTransaction.commitAllowingStateLoss();
 
     }
-
 
     public long download(String url, File targetFolder, String title) {
 

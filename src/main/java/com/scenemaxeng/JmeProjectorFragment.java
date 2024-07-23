@@ -11,23 +11,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class JmeProjectorFragment extends AndroidHarnessFragment {
-
-    //private IProjectorListener projListener = null;
+    private String startScript;
+    private String startWorkingFolder;
 
     public JmeProjectorFragment() {
         appClass=SceneMaxApp.class.getName();
     }
 
-//    public void setProjectorListener(IProjectorListener listener) {
-//        this.projListener=listener;
-//    }
-
     @Override
     public void onStart() {
         super.onStart();
-
         final SceneMaxApp app=(SceneMaxApp)this.getJmeApplication();
-
     }
 
     public void clearScene() {
@@ -38,25 +32,31 @@ public class JmeProjectorFragment extends AndroidHarnessFragment {
     }
 
     public void runScript(String script, String workingFolder) {
+        SceneMaxApp app=(SceneMaxApp)this.getJmeApplication();
+        if(app == null) {
+            this.startScript = script;
+            this.startWorkingFolder = workingFolder;
+            return;
+        }
+
+        this.startScript = null;
+        this.startWorkingFolder = null;
 
         // remove canvas size & window mode commands for Android execution
         script=setCanvasSize(script);
         script=setWindowMode(script);
 
-        SceneMaxApp app=(SceneMaxApp)this.getJmeApplication();
-        if(app!=null) {
-            File wf = new File(workingFolder);
-            File projFolder = wf.getParentFile().getParentFile();
-            File resourcesFolder = new File(projFolder,"resources");
-            AssetsMapping am = new AssetsMapping(this.getContext(),resourcesFolder.getAbsolutePath());
-            app.setAssetsMapping(am);
-            app.setWorkingFolder(workingFolder);
+        File wf = new File(workingFolder);
+        File projFolder = wf.getParentFile().getParentFile();
+        File resourcesFolder = new File(projFolder,"resources");
+        AssetsMapping am = new AssetsMapping(this.getContext(),resourcesFolder.getAbsolutePath());
+        app.setAssetsMapping(am);
+        app.setWorkingFolder(workingFolder);
 
-            File cf = new File(this.getContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),"common");
-            app.setCommonFolder(cf.getAbsolutePath());
+        File cf = new File(this.getContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),"common");
+        app.setCommonFolder(cf.getAbsolutePath());
 
-            app.run(script);
-        }
+        app.run(script);
     }
 
     public void stopScript() {
