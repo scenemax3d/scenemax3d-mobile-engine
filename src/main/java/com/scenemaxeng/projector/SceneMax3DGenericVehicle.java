@@ -148,7 +148,7 @@ public class SceneMax3DGenericVehicle extends Vehicle {
         engineSound.load(assetManager);
         engine.setSound(engineSound);
 
-        Sound hornSound = new SceneMax3DGenericSound("audio/horn-1.ogg", 823f);
+        Sound hornSound = new SceneMax3DGenericSound("audio/horn-1.wav", 823f);
         hornSound.load(assetManager);
         setHornSound(hornSound);
 
